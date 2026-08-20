@@ -23,7 +23,7 @@ are excluded by default.
 ## Install
 
 ```bash
-git clone GITHUB_REPOSITORY_URL atlas-context-router
+git clone https://github.com/aiua-dev/atlas-context-router.git
 cd atlas-context-router
 ./install.sh
 ```
@@ -43,7 +43,7 @@ atlas-router --help
 As a GitHub-backed Codex marketplace:
 
 ```bash
-codex plugin marketplace add GITHUB_OWNER/GITHUB_REPOSITORY
+codex plugin marketplace add aiua-dev/atlas-context-router
 codex plugin add atlas@atlas-router
 ```
 

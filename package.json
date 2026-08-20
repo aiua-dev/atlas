@@ -2,6 +2,14 @@
   "name": "atlas-context-router",
   "version": "0.2.0",
   "description": "Incremental project knowledge routing for Codex, with Trellis-aware source precedence.",
+  "homepage": "https://github.com/aiua-dev/atlas-context-router#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/aiua-dev/atlas-context-router.git"
+  },
+  "bugs": {
+    "url": "https://github.com/aiua-dev/atlas-context-router/issues"
+  },
   "type": "module",
   "bin": {
     "atlas-router": "plugins/atlas/bin/atlas-router.mjs"

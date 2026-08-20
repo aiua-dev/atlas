@@ -20,6 +20,8 @@
     "defaultPrompt": "Use $atlas to route to the smallest relevant canonical knowledge set before work and reconcile durable findings afterward."
   },
   "license": "MIT",
+  "homepage": "https://github.com/aiua-dev/atlas-context-router",
+  "repository": "https://github.com/aiua-dev/atlas-context-router.git",
   "keywords": [
     "knowledge-routing",
     "context",
