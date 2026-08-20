@@ -1,0 +1,31 @@
+{
+  "name": "atlas-context-router",
+  "version": "0.2.0",
+  "description": "Incremental project knowledge routing for Codex, with Trellis-aware source precedence.",
+  "type": "module",
+  "bin": {
+    "atlas-router": "plugins/atlas/bin/atlas-router.mjs"
+  },
+  "files": [
+    ".agents/",
+    "plugins/",
+    "README.md",
+    "LICENSE",
+    "install.sh"
+  ],
+  "scripts": {
+    "test": "node --test",
+    "check": "npm test && node plugins/atlas/bin/atlas-router.mjs doctor test/fixtures/project"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "keywords": [
+    "codex",
+    "atlas",
+    "context-routing",
+    "knowledge-graph",
+    "trellis"
+  ],
+  "license": "MIT"
+}

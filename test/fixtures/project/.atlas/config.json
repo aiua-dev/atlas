@@ -1,0 +1,54 @@
+{
+  "version": 1,
+  "entrypoints": [
+    "docs/README.md"
+  ],
+  "sources": [
+    {
+      "glob": "docs/**/*.md",
+      "role": "canonical-doc",
+      "authority": 90
+    },
+    {
+      "glob": "docs/**/*.yaml",
+      "role": "api-contract",
+      "authority": 95
+    },
+    {
+      "glob": ".trellis/spec/**/*.md",
+      "role": "implementation-constraint",
+      "authority": 55
+    },
+    {
+      "glob": ".trellis/tasks/*/prd.md",
+      "role": "task-intent",
+      "authority": 35
+    }
+  ],
+  "exclude": [
+    ".trellis/tasks/archive/**"
+  ],
+  "routes": [
+    {
+      "id": "consumer-api-test",
+      "exclusive": true,
+      "when": {
+        "allOfAny": [
+          ["接口测试", "测试接口", "测试", "request api"],
+          ["consumer", "watchface", "token", "设备号"]
+        ]
+      },
+      "read": [
+        "docs/reference/consumer-auth-orders.md#iOS 测试会话",
+        "docs/reference/deployment-topology.md",
+        "docs/openapi.yaml"
+      ]
+    }
+  ],
+  "limits": {
+    "maxResults": 6,
+    "maxRelated": 1,
+    "maxContextChars": 4000,
+    "maxBodyTerms": 2000
+  }
+}

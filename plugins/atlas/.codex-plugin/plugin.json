@@ -1,0 +1,28 @@
+{
+  "name": "atlas",
+  "version": "0.2.0",
+  "description": "Route Codex to the smallest relevant project knowledge set and reconcile durable findings.",
+  "author": {
+    "name": "Atlas Context Router contributors"
+  },
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Atlas",
+    "shortDescription": "Incremental project knowledge routing for Codex.",
+    "longDescription": "Atlas indexes maintained knowledge incrementally, injects only relevant paths and sections, and keeps Trellis task artifacts below canonical sources.",
+    "developerName": "Atlas Context Router contributors",
+    "category": "Productivity",
+    "capabilities": [
+      "Project knowledge routing",
+      "Incremental knowledge indexing",
+      "Trellis-aware source precedence"
+    ],
+    "defaultPrompt": "Use $atlas to route to the smallest relevant canonical knowledge set before work and reconcile durable findings afterward."
+  },
+  "license": "MIT",
+  "keywords": [
+    "knowledge-routing",
+    "context",
+    "trellis"
+  ]
+}

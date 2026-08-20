@@ -1,0 +1,20 @@
+{
+  "name": "atlas-router",
+  "interface": {
+    "displayName": "Atlas Context Router"
+  },
+  "plugins": [
+    {
+      "name": "atlas",
+      "source": {
+        "source": "local",
+        "path": "./plugins/atlas"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity"
+    }
+  ]
+}

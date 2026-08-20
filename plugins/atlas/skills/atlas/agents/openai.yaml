@@ -1,0 +1,4 @@
+interface:
+  display_name: "Atlas"
+  short_description: "Route and reconcile project knowledge"
+  default_prompt: "Use $atlas to route to the smallest relevant canonical knowledge set before work and reconcile durable findings afterward."
