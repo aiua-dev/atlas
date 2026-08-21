@@ -26,7 +26,11 @@ and not a second task database. Atlas has two modes: **route before work** and
    all documentation.
 
 The `UserPromptSubmit` hook performs the same lookup when a project opts in.
-It injects paths, roles, line ranges, and reasons—not document contents.
+It injects paths, roles, line ranges, and reasons—not document contents. The
+hook pins the first confident route per Codex session and stays silent on later
+turns, so arbitrary acknowledgements, refusals, and clarifications cannot
+replace useful context. When a later turn starts a genuinely different
+non-trivial task, run `atlas-router context` with the full conversational intent.
 
 ## Source precedence
 

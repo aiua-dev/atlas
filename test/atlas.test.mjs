@@ -8,7 +8,9 @@ import {
   buildIndex,
   diagnose,
   formatContext,
-  queryContext
+  queryContext,
+  queryHookContext,
+  resolveHookSessionKey
 } from "../plugins/atlas/lib/core.mjs";
 
 const repository = path.resolve(import.meta.dirname, "..");
@@ -70,6 +72,48 @@ test("canonical documentation ranks above Trellis task evidence for generic quer
   assert.ok(task < 0 || canonical < task);
 }));
 
+test("maintained sources outrank repetitive Trellis task prose", () => withCache(() => {
+  const root = projectCopy();
+  fs.writeFileSync(
+    path.join(root, ".trellis", "tasks", "current", "prd.md"),
+    "# 测试环境订单接口同步\n\n测试环境订单接口同步测试接口同步。\n",
+    "utf8"
+  );
+  const context = queryContext({
+    projectRoot: root,
+    prompt: "测试一下测试环境的订单接口同步",
+    forceRefresh: true
+  });
+  const canonical = context.results.findIndex((result) => result.path === "docs/reference/consumer-auth-orders.md");
+  const task = context.results.findIndex((result) => result.path === ".trellis/tasks/current/prd.md");
+  assert.ok(canonical >= 0);
+  assert.ok(task < 0 || canonical < task);
+}));
+
+test("session-pinned hook routes ignore arbitrary follow-up wording without a refusal dictionary", () => withCache(() => {
+  const root = projectCopy();
+  buildIndex(root);
+  const payload = { session_id: "session-follow-up-test" };
+  const first = queryHookContext({ projectRoot: root, prompt: "帮我测试 consumer 接口", payload, env: {} });
+  const refusal = queryHookContext({ projectRoot: root, prompt: "这回先算了吧", payload, env: {} });
+  const topicalRefusal = queryHookContext({ projectRoot: root, prompt: "consumer 这回也先别弄了", payload, env: {} });
+  const acknowledgement = queryHookContext({ projectRoot: root, prompt: "照刚才说的继续", payload, env: {} });
+  const differentTask = queryHookContext({ projectRoot: root, prompt: "帮我测试另一个 consumer 接口", payload, env: {} });
+
+  assert.deepEqual(first.matchedRoutes, ["consumer-api-test"]);
+  assert.equal(refusal, null);
+  assert.equal(topicalRefusal, null);
+  assert.equal(acknowledgement, null);
+  assert.equal(differentTask, null);
+}));
+
+test("hook session identity accepts Codex thread environment without storing raw ids", () => {
+  assert.equal(resolveHookSessionKey({}, {}), null);
+  const key = resolveHookSessionKey({}, { CODEX_THREAD_ID: "thread-secret-value" });
+  assert.match(key, /^[a-f0-9]{24}$/);
+  assert.equal(key.includes("thread-secret-value"), false);
+});
+
 test("hook is silent without opt-in and emits valid bounded context with config", () => withCache(() => {
   const noConfig = fs.mkdtempSync(path.join(os.tmpdir(), "atlas-router-empty-"));
   const silent = spawnSync(process.execPath, [cli, "hook"], {
@@ -81,16 +125,26 @@ test("hook is silent without opt-in and emits valid bounded context with config"
   assert.equal(silent.stdout, "");
 
   const root = projectCopy();
+  const hookEnv = { ...process.env, CODEX_SESSION_ID: "atlas-hook-test" };
   const routed = spawnSync(process.execPath, [cli, "hook"], {
     input: JSON.stringify({ cwd: root, prompt: "帮我测试 consumer 接口" }),
     encoding: "utf8",
-    env: process.env
+    env: hookEnv
   });
   assert.equal(routed.status, 0, routed.stderr);
   const payload = JSON.parse(routed.stdout);
   assert.equal(payload.hookSpecificOutput.hookEventName, "UserPromptSubmit");
   assert.match(payload.hookSpecificOutput.additionalContext, /consumer-auth-orders\.md/);
+  assert.match(payload.hookSpecificOutput.additionalContext, /不要遍历源码/);
   assert.ok(payload.hookSpecificOutput.additionalContext.length < 4000);
+
+  const followUp = spawnSync(process.execPath, [cli, "hook"], {
+    input: JSON.stringify({ cwd: root, prompt: "这回先算了吧" }),
+    encoding: "utf8",
+    env: hookEnv
+  });
+  assert.equal(followUp.status, 0, followUp.stderr);
+  assert.equal(followUp.stdout, "");
 }));
 
 test("doctor detects Trellis without treating its project hook as a dependency", () => withCache(() => {

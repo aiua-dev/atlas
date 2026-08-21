@@ -20,6 +20,11 @@ Atlas 不会在每轮 Prompt 中注入整棵文档树，也不会读取全部文
 触发扫描。未变化的文件通过元数据复用，不会重新读取内容；Trellis 归档和运行
 时产物默认排除。
 
+Prompt hook 只在每个 Codex 会话首次形成可信路由时注入一次，并按会话固定该
+路由。后续的“继续”“先算了”等任意表达不会重新做语义路由，也不依赖拒绝词
+黑名单。若同一会话切换到新的非平凡任务，Atlas skill 会结合完整对话意图按需
+调用 CLI 重新路由；`atlas-router context` 始终可显式查询。
+
 ## 安装
 
 ```bash
@@ -92,8 +97,8 @@ atlas-router doctor .
 ```
 
 维护文档或路由配置变化后，需要重新执行 `atlas-router index`。Prompt hook 只
-注入导航上下文，并且与包括 Trellis 在内的其他 `UserPromptSubmit` hooks 独立
-运行，不依赖执行顺序。
+为会话首次可信请求注入导航上下文，并且与包括 Trellis 在内的其他
+`UserPromptSubmit` hooks 独立运行，不依赖执行顺序。
 
 ## 与 Trellis 的边界
 

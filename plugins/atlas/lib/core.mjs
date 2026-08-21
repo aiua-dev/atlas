@@ -375,18 +375,32 @@ function resolveHeading(document, requested) {
     : { heading: decoded, line: 1, endLine: Math.min(40, document.headings[0]?.endLine ?? 40) };
 }
 
-function resultFromDocument(document, reason, score, anchor = "") {
+function resultFromDocument(document, reason, score, anchor = "", match = null) {
   return {
     path: document.path,
     role: document.role,
     authority: document.authority,
     score,
     reason,
+    ...(match ? { match } : {}),
     ...resolveHeading(document, anchor)
   };
 }
 
-export function queryContext({ projectRoot, prompt, forceRefresh = false, cacheOnly = false }) {
+function semanticTier(document) {
+  if (["canonical-doc", "api-contract", "runbook", "adr"].includes(document.role)) return 5;
+  if (document.role === "knowledge-entrypoint") return 4;
+  if (document.role === "implementation-constraint") return 3;
+  if (["task-intent", "task-evidence"].includes(document.role)) return 1;
+  return 2;
+}
+
+export function queryContext({
+  projectRoot,
+  prompt,
+  forceRefresh = false,
+  cacheOnly = false
+}) {
   const { index, cachePath, config } = ensureIndex(projectRoot, forceRefresh, cacheOnly);
   const byPath = new Map(index.documents.map((document) => [document.path, document]));
   const results = [];
@@ -417,7 +431,13 @@ export function queryContext({ projectRoot, prompt, forceRefresh = false, cacheO
       }
       if (!document || seen.has(relative)) continue;
       seen.add(relative);
-      results.push(resultFromDocument(document, `显式路由 ${route.id}`, 1000 - indexInRoute, anchor));
+      results.push(resultFromDocument(
+        document,
+        `显式路由 ${route.id}`,
+        1000 - indexInRoute,
+        anchor,
+        { type: "explicit", route: route.id }
+      ));
     }
   }
 
@@ -441,14 +461,38 @@ export function queryContext({ projectRoot, prompt, forceRefresh = false, cacheO
         }
       }
       if (keyHits + bodyHits === 0) continue;
+      // Authority must be strong enough to keep maintained owners ahead of
+      // working-task prose that happens to repeat more generic query terms.
+      // Relevance still decides between documents with comparable authority.
       const score = keyHits * 8 + bodyHits * 2 + document.authority / 20;
-      semantic.push({ document, score, matched: [...new Set(matched)].slice(0, 5) });
+      semantic.push({
+        document,
+        score,
+        tier: semanticTier(document),
+        keyHits,
+        bodyHits,
+        matched: [...new Set(matched)].slice(0, 5)
+      });
     }
-    semantic.sort((left, right) => right.score - left.score || right.document.authority - left.document.authority);
+    semantic.sort((left, right) =>
+      right.tier - left.tier ||
+      right.score - left.score ||
+      right.document.authority - left.document.authority
+    );
     for (const candidate of semantic) {
       if (results.length >= config.limits.maxResults) break;
       seen.add(candidate.document.path);
-      results.push(resultFromDocument(candidate.document, `命中 ${candidate.matched.join("、")}`, candidate.score));
+      results.push(resultFromDocument(
+        candidate.document,
+        `命中 ${candidate.matched.join("、")}`,
+        candidate.score,
+        "",
+        {
+          type: "semantic",
+          keyHits: candidate.keyHits,
+          bodyHits: candidate.bodyHits
+        }
+      ));
     }
   }
 
@@ -480,11 +524,108 @@ export function queryContext({ projectRoot, prompt, forceRefresh = false, cacheO
   };
 }
 
+function lookupSessionValue(data, keys) {
+  if (!data || typeof data !== "object") return null;
+  for (const key of keys) {
+    const value = data[key];
+    if (typeof value === "string" && value.trim()) return value.trim();
+  }
+  for (const key of ["input", "properties", "event", "hook_input", "hookInput"]) {
+    const value = lookupSessionValue(data[key], keys);
+    if (value) return value;
+  }
+  return null;
+}
+
+export function resolveHookSessionKey(payload = {}, env = process.env) {
+  const payloadValue = lookupSessionValue(payload, [
+    "session_id", "sessionId", "sessionID",
+    "conversation_id", "conversationId", "conversationID",
+    "thread_id", "threadId", "threadID",
+    "transcript_path", "transcriptPath", "transcript"
+  ]);
+  const environmentValue = env.CODEX_SESSION_ID || env.CODEX_THREAD_ID || env.CODEX_TRANSCRIPT_PATH;
+  const value = payloadValue || environmentValue;
+  return value ? sha256(String(value)).slice(0, 24) : null;
+}
+
+function sessionRoutePath(projectRoot, sessionKey) {
+  return path.join(path.dirname(cachePathFor(projectRoot)), "sessions", `${sessionKey}.json`);
+}
+
+function routeSignature(context) {
+  return sha256(JSON.stringify({
+    matchedRoutes: context.matchedRoutes,
+    results: context.results.map((result) => ({
+      path: result.path,
+      heading: result.heading,
+      line: result.line,
+      endLine: result.endLine
+    }))
+  }));
+}
+
+function readSessionRoute(projectRoot, sessionKey) {
+  if (!sessionKey) return null;
+  const file = sessionRoutePath(projectRoot, sessionKey);
+  if (!fs.existsSync(file)) return null;
+  try {
+    const state = readJson(file);
+    return state?.root === path.resolve(projectRoot) && state?.route ? state : null;
+  } catch {
+    return null;
+  }
+}
+
+function writeSessionRoute(projectRoot, sessionKey, context) {
+  if (!sessionKey) return;
+  writeJsonAtomic(sessionRoutePath(projectRoot, sessionKey), {
+    version: 1,
+    root: path.resolve(projectRoot),
+    signature: routeSignature(context),
+    updatedAt: new Date().toISOString(),
+    route: {
+      matchedRoutes: context.matchedRoutes,
+      results: context.results.map((result) => ({
+        path: result.path,
+        heading: result.heading,
+        line: result.line,
+        endLine: result.endLine
+      }))
+    }
+  });
+}
+
+function confidentInitialRoute(context) {
+  if (context.matchedRoutes.length > 0) return true;
+  return Number(context.results[0]?.match?.keyHits ?? 0) > 0;
+}
+
+export function queryHookContext({ projectRoot, prompt, payload = {}, env = process.env }) {
+  const sessionKey = resolveHookSessionKey(payload, env);
+  const previous = readSessionRoute(projectRoot, sessionKey);
+  // Automatic routing is a one-shot session bootstrap. Follow-up turns may be
+  // acknowledgements, refusals, clarifications, or genuinely new work; a
+  // stateless hook cannot distinguish them reliably. Leave later routing to
+  // the Atlas skill/CLI, which runs with the full conversational intent.
+  if (previous) return null;
+
+  const context = queryContext({
+    projectRoot,
+    prompt,
+    cacheOnly: true
+  });
+
+  if (!confidentInitialRoute(context)) return null;
+  writeSessionRoute(projectRoot, sessionKey, context);
+  return context;
+}
+
 export function formatContext(context) {
   if (context.results.length === 0) return "";
   const lines = [
     `[Atlas route] project=${context.root}`,
-    "按以下顺序只读取相关路径/章节；易漂移事实仍以当前代码、配置或运行态复核："
+    "按以下顺序只读取相关路径/章节；这些资料足以执行时不要遍历源码，只有冲突、缺失或失败再扩展；易漂移事实仍以当前配置或运行态复核："
   ];
   context.results.forEach((result, index) => {
     const section = result.heading ? `#${result.heading}` : "";

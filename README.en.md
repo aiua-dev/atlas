@@ -22,6 +22,13 @@ roots. Prompt hooks never initiate that scan. Unchanged files are reused by
 metadata and their contents are not reread. Trellis archives and runtime
 artifacts are excluded by default.
 
+The prompt hook injects only the first confident route in each Codex session
+and pins it for that session. Arbitrary follow-ups such as acknowledgements or
+refusals do not trigger semantic rerouting, and no refusal-word blacklist is
+used. When a session moves to a different non-trivial task, the Atlas skill can
+reroute with full conversational intent; `atlas-router context` remains
+available for explicit lookup.
+
 ## Install
 
 ```bash
@@ -99,8 +106,9 @@ atlas-router doctor .
 ```
 
 Run `atlas-router index` again after maintained knowledge or route configuration
-changes. The prompt hook only injects navigation context and runs independently
-from other `UserPromptSubmit` hooks, including Trellis.
+changes. The prompt hook only injects navigation context for the session's first
+confident request and runs independently from other `UserPromptSubmit` hooks,
+including Trellis.
 
 ## Boundary with Trellis
 

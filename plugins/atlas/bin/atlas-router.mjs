@@ -10,7 +10,8 @@ import {
   findProjectRoot,
   formatContext,
   initProject,
-  queryContext
+  queryContext,
+  queryHookContext
 } from "../lib/core.mjs";
 
 function usage(exitCode = 0) {
@@ -62,7 +63,7 @@ async function main() {
   const command = process.argv[2];
   if (!command || ["-h", "--help", "help"].includes(command)) usage(0);
   if (["-v", "--version", "version"].includes(command)) {
-    process.stdout.write("0.2.0\n");
+    process.stdout.write("0.2.1\n");
     return;
   }
 
@@ -129,7 +130,8 @@ async function main() {
     const payload = raw.trim() ? JSON.parse(raw) : {};
     const root = findProjectRoot(payload.cwd || process.cwd());
     if (!root || !payload.prompt) return;
-    const context = queryContext({ projectRoot: root, prompt: payload.prompt, cacheOnly: true });
+    const context = queryHookContext({ projectRoot: root, prompt: payload.prompt, payload });
+    if (!context) return;
     const additionalContext = formatContext(context);
     if (!additionalContext) return;
     process.stdout.write(JSON.stringify({
