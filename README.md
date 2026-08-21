@@ -20,10 +20,12 @@ Atlas 不会在每轮 Prompt 中注入整棵文档树，也不会读取全部文
 触发扫描。未变化的文件通过元数据复用，不会重新读取内容；Trellis 归档和运行
 时产物默认排除。
 
-Prompt hook 只在每个 Codex 会话首次形成可信路由时注入一次，并按会话固定该
-路由。后续的“继续”“先算了”等任意表达不会重新做语义路由，也不依赖拒绝词
-黑名单。若同一会话切换到新的非平凡任务，Atlas skill 会结合完整对话意图按需
-调用 CLI 重新路由；`atlas-router context` 始终可显式查询。
+Atlas 为每个 Codex 会话维护一个轻量的**活动路由图**。Prompt hook 每轮只恢复
+当前焦点，不拿最后一句话重新做语义检索，因此“继续”“先算了”等任意表达不
+需要拒绝词黑名单。准备跨知识边界执行新的非平凡操作时，Atlas skill 用完整
+会话意图调用 `atlas-router route`：重叠结果只补新增节点，不相交结果形成新分支，
+返回旧领域时重新激活原分支。旧分支保存在仓库外的会话缓存中，hook 每轮只
+注入当前分支的有限节点。
 
 ## 安装
 
@@ -93,12 +95,15 @@ atlas-router init . --trellis
 ```bash
 atlas-router index .
 atlas-router context --root . --prompt "帮我测试 consumer 接口" --json
+atlas-router route --root . --prompt "先完成订单同步烟测，再核验其数据库写入边界"
+atlas-router focus --root .
 atlas-router doctor .
 ```
 
-维护文档或路由配置变化后，需要重新执行 `atlas-router index`。Prompt hook 只
-为会话首次可信请求注入导航上下文，并且与包括 Trellis 在内的其他
-`UserPromptSubmit` hooks 独立运行，不依赖执行顺序。
+`context` 是无状态查询；`route` 使用当前 Codex 会话身份增量更新活动路由图；
+`focus` 查看当前活动分支。维护文档或路由配置变化后，需要重新执行
+`atlas-router index`。Prompt hook 建立首次可信路由后只恢复会话焦点，并且与
+包括 Trellis 在内的其他 `UserPromptSubmit` hooks 独立运行，不依赖执行顺序。
 
 ## 与 Trellis 的边界
 

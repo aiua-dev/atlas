@@ -26,11 +26,24 @@ and not a second task database. Atlas has two modes: **route before work** and
    all documentation.
 
 The `UserPromptSubmit` hook performs the same lookup when a project opts in.
-It injects paths, roles, line ranges, and reasons—not document contents. The
-hook pins the first confident route per Codex session and stays silent on later
-turns, so arbitrary acknowledgements, refusals, and clarifications cannot
-replace useful context. When a later turn starts a genuinely different
-non-trivial task, run `atlas-router context` with the full conversational intent.
+It injects paths, roles, line ranges, and reasons—not document contents. Atlas
+keeps a session-scoped active route graph outside the repository. The hook
+restores the current branch instead of semantically searching each latest
+sentence, so acknowledgements, refusals, and clarifications cannot replace
+useful context.
+
+Before executing a non-trivial operation that the active nodes do not cover,
+derive one concise intent from the full conversation and run:
+
+```bash
+atlas-router route --root . --prompt "<complete current execution intent>"
+```
+
+Do not call `route` for conversational control replies. The command returns
+only newly added nodes when expanding the current branch, creates a preserved
+branch for a disjoint domain, and reactivates an existing branch when returning
+to it. Use `atlas-router focus --root .` only when the active branch needs to be
+inspected explicitly. `atlas-router context` remains the stateless lookup.
 
 ## Source precedence
 

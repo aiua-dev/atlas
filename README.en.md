@@ -22,12 +22,15 @@ roots. Prompt hooks never initiate that scan. Unchanged files are reused by
 metadata and their contents are not reread. Trellis archives and runtime
 artifacts are excluded by default.
 
-The prompt hook injects only the first confident route in each Codex session
-and pins it for that session. Arbitrary follow-ups such as acknowledgements or
-refusals do not trigger semantic rerouting, and no refusal-word blacklist is
-used. When a session moves to a different non-trivial task, the Atlas skill can
-reroute with full conversational intent; `atlas-router context` remains
-available for explicit lookup.
+Atlas maintains a lightweight **active route graph** for each Codex session.
+The prompt hook restores the current focus instead of semantically searching
+the latest sentence, so arbitrary acknowledgements or refusals need no word
+blacklist. Before executing non-trivial work across a knowledge boundary, the
+Atlas skill calls `atlas-router route` with full conversational intent.
+Overlapping results add only new nodes, disjoint results create a branch, and
+returning to an earlier domain reactivates its preserved branch. The graph is
+stored outside the repository, while the hook injects only a bounded current
+focus.
 
 ## Install
 
@@ -102,12 +105,16 @@ Build the index and inspect the route:
 ```bash
 atlas-router index .
 atlas-router context --root . --prompt "帮我测试 consumer 接口" --json
+atlas-router route --root . --prompt "smoke-test order sync, then verify its database write boundary"
+atlas-router focus --root .
 atlas-router doctor .
 ```
 
-Run `atlas-router index` again after maintained knowledge or route configuration
-changes. The prompt hook only injects navigation context for the session's first
-confident request and runs independently from other `UserPromptSubmit` hooks,
+`context` is a stateless lookup, `route` incrementally updates the current Codex
+session's active route graph, and `focus` shows its current branch. Run
+`atlas-router index` again after maintained knowledge or route configuration
+changes. After establishing the first confident route, the prompt hook only
+restores focus and runs independently from other `UserPromptSubmit` hooks,
 including Trellis.
 
 ## Boundary with Trellis

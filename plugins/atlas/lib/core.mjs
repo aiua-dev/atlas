@@ -399,7 +399,8 @@ export function queryContext({
   projectRoot,
   prompt,
   forceRefresh = false,
-  cacheOnly = false
+  cacheOnly = false,
+  expandExclusive = false
 }) {
   const { index, cachePath, config } = ensureIndex(projectRoot, forceRefresh, cacheOnly);
   const byPath = new Map(index.documents.map((document) => [document.path, document]));
@@ -441,7 +442,7 @@ export function queryContext({
     }
   }
 
-  if (!exclusiveRoute) {
+  if (!exclusiveRoute || expandExclusive) {
     const promptTerms = tokenize(prompt);
     const semantic = [];
     for (const document of index.documents) {
@@ -497,7 +498,7 @@ export function queryContext({
   }
 
   let relatedCount = 0;
-  if (!exclusiveRoute && results.length < config.limits.maxResults) {
+  if ((!exclusiveRoute || expandExclusive) && results.length < config.limits.maxResults) {
     for (const result of [...results]) {
       const document = byPath.get(result.path);
       for (const link of document?.links ?? []) {
@@ -565,67 +566,282 @@ function routeSignature(context) {
   }));
 }
 
-function readSessionRoute(projectRoot, sessionKey) {
+function sanitizeRouteResult(result) {
+  return {
+    path: result.path,
+    role: result.role ?? "reference",
+    authority: Number(result.authority ?? 50),
+    score: Number(result.score ?? 0),
+    reason: result.reason ?? "会话活动路由",
+    heading: result.heading ?? "",
+    line: Number(result.line ?? 1),
+    endLine: Number(result.endLine ?? 40),
+    ...(result.match ? { match: result.match } : {})
+  };
+}
+
+function routeNodeKey(result) {
+  return `${result.path}#${result.heading || `${result.line}-${result.endLine}`}`;
+}
+
+function newSessionGraph(projectRoot) {
+  return {
+    version: 2,
+    root: path.resolve(projectRoot),
+    activeBranchId: null,
+    updatedAt: new Date().toISOString(),
+    branches: []
+  };
+}
+
+function migrateSessionGraph(projectRoot, state) {
+  if (state?.version === 2 && Array.isArray(state.branches)) return state;
+  if (state?.route && Array.isArray(state.route.results)) {
+    const branchId = `branch-${String(state.signature || sha256(JSON.stringify(state.route))).slice(0, 12)}`;
+    return {
+      version: 2,
+      root: path.resolve(projectRoot),
+      activeBranchId: branchId,
+      updatedAt: state.updatedAt || new Date().toISOString(),
+      branches: [{
+        id: branchId,
+        createdAt: state.updatedAt || new Date().toISOString(),
+        updatedAt: state.updatedAt || new Date().toISOString(),
+        matchedRoutes: Array.isArray(state.route.matchedRoutes) ? state.route.matchedRoutes : [],
+        nodes: state.route.results.map(sanitizeRouteResult)
+      }]
+    };
+  }
+  return newSessionGraph(projectRoot);
+}
+
+function readSessionGraph(projectRoot, sessionKey) {
   if (!sessionKey) return null;
   const file = sessionRoutePath(projectRoot, sessionKey);
   if (!fs.existsSync(file)) return null;
   try {
     const state = readJson(file);
-    return state?.root === path.resolve(projectRoot) && state?.route ? state : null;
+    if (state?.root !== path.resolve(projectRoot)) return null;
+    return migrateSessionGraph(projectRoot, state);
   } catch {
     return null;
   }
 }
 
-function writeSessionRoute(projectRoot, sessionKey, context) {
+function writeSessionGraph(projectRoot, sessionKey, graph) {
   if (!sessionKey) return;
-  writeJsonAtomic(sessionRoutePath(projectRoot, sessionKey), {
-    version: 1,
-    root: path.resolve(projectRoot),
-    signature: routeSignature(context),
-    updatedAt: new Date().toISOString(),
-    route: {
-      matchedRoutes: context.matchedRoutes,
-      results: context.results.map((result) => ({
-        path: result.path,
-        heading: result.heading,
-        line: result.line,
-        endLine: result.endLine
-      }))
-    }
-  });
+  writeJsonAtomic(sessionRoutePath(projectRoot, sessionKey), graph);
 }
 
 function confidentInitialRoute(context) {
   if (context.matchedRoutes.length > 0) return true;
-  return Number(context.results[0]?.match?.keyHits ?? 0) > 0;
+  const top = context.results[0]?.match;
+  const keyHits = Number(top?.keyHits ?? 0);
+  const bodyHits = Number(top?.bodyHits ?? 0);
+  return keyHits >= 2 || (keyHits >= 1 && bodyHits >= 1);
+}
+
+function graphSummary(graph) {
+  return {
+    activeBranchId: graph?.activeBranchId ?? null,
+    branchCount: graph?.branches?.length ?? 0,
+    branches: (graph?.branches ?? []).map((branch) => ({
+      id: branch.id,
+      active: branch.id === graph.activeBranchId,
+      matchedRoutes: branch.matchedRoutes,
+      nodeCount: branch.nodes.length
+    }))
+  };
+}
+
+function contextWithState(context, routeState, results = context.results) {
+  return {
+    ...context,
+    results,
+    routeState
+  };
+}
+
+function contextFromBranch(projectRoot, branch, graph, mode, results = branch.nodes) {
+  const project = loadProject(projectRoot);
+  return {
+    root: project.root,
+    cachePath: cachePathFor(project.root),
+    scannedAt: null,
+    stats: null,
+    matchedRoutes: branch.matchedRoutes,
+    trellis: fs.existsSync(path.join(project.root, ".trellis")),
+    maxContextChars: project.config.limits.maxContextChars,
+    results: results.slice(0, project.config.limits.maxResults),
+    routeState: {
+      mode,
+      branchId: branch.id,
+      branchCount: graph.branches.length,
+      nodeCount: branch.nodes.length
+    }
+  };
+}
+
+function createBranch(context, now) {
+  const signature = routeSignature(context);
+  return {
+    id: `branch-${signature.slice(0, 12)}`,
+    createdAt: now,
+    updatedAt: now,
+    matchedRoutes: [...new Set(context.matchedRoutes)],
+    nodes: context.results.map(sanitizeRouteResult)
+  };
+}
+
+export function updateSessionRoute({
+  projectRoot,
+  prompt,
+  payload = {},
+  env = process.env,
+  forceRefresh = false,
+  expandExclusive = false
+}) {
+  const sessionKey = resolveHookSessionKey(payload, env);
+  const existingGraph = readSessionGraph(projectRoot, sessionKey);
+  let context = queryContext({
+    projectRoot,
+    prompt,
+    forceRefresh,
+    cacheOnly: !forceRefresh
+  });
+  if (expandExclusive && context.matchedRoutes.length > 0) {
+    const reactivatesExisting = existingGraph?.branches.some((branch) =>
+      branch.id !== existingGraph.activeBranchId &&
+      branch.matchedRoutes.some((routeId) => context.matchedRoutes.includes(routeId))
+    );
+    if (!reactivatesExisting) {
+      context = queryContext({
+        projectRoot,
+        prompt,
+        forceRefresh,
+        cacheOnly: !forceRefresh,
+        expandExclusive: true
+      });
+    }
+  }
+
+  if (!confidentInitialRoute(context)) {
+    return {
+      status: "no-match",
+      context: null,
+      graph: graphSummary(existingGraph)
+    };
+  }
+  if (!sessionKey) {
+    return {
+      status: "unscoped",
+      context: contextWithState(context, { mode: "unscoped", branchId: null, branchCount: 0 }),
+      graph: graphSummary(null)
+    };
+  }
+
+  const graph = existingGraph ?? newSessionGraph(projectRoot);
+  const now = new Date().toISOString();
+  const candidateNodes = context.results.map(sanitizeRouteResult);
+  const activeBefore = graph.activeBranchId;
+
+  let branch = null;
+  if (context.matchedRoutes.length > 0) {
+    branch = graph.branches.find((existing) =>
+      existing.matchedRoutes.some((routeId) => context.matchedRoutes.includes(routeId))
+    ) ?? null;
+  } else {
+    const primaryPath = candidateNodes[0]?.path ?? null;
+    const matching = primaryPath
+      ? graph.branches.filter((existing) =>
+        existing.nodes.some((node) => node.path === primaryPath)
+      )
+      : [];
+    branch = matching.find((existing) => existing.id === graph.activeBranchId) ?? matching[0] ?? null;
+  }
+
+  let status;
+  let outputResults;
+  if (!branch) {
+    branch = createBranch(context, now);
+    const collision = graph.branches.find((existing) => existing.id === branch.id);
+    if (collision) branch.id = `${branch.id}-${graph.branches.length + 1}`;
+    graph.branches.push(branch);
+    status = graph.branches.length === 1 ? "created" : "branched";
+    outputResults = branch.nodes;
+  } else {
+    const existingKeys = new Set(branch.nodes.map(routeNodeKey));
+    const added = candidateNodes.filter((node) => !existingKeys.has(routeNodeKey(node)));
+    const merged = [];
+    const seen = new Set();
+    for (const node of [...candidateNodes, ...branch.nodes]) {
+      const key = routeNodeKey(node);
+      if (seen.has(key)) continue;
+      seen.add(key);
+      merged.push(node);
+    }
+    branch.nodes = merged;
+    branch.matchedRoutes = [...new Set([...context.matchedRoutes, ...branch.matchedRoutes])];
+    branch.updatedAt = now;
+    if (branch.id !== activeBefore) {
+      status = added.length > 0 ? "reactivated-expanded" : "reactivated";
+      outputResults = branch.nodes;
+    } else if (added.length > 0) {
+      status = "expanded";
+      outputResults = added;
+    } else {
+      status = "unchanged";
+      outputResults = [];
+    }
+  }
+
+  graph.activeBranchId = branch.id;
+  graph.updatedAt = now;
+  writeSessionGraph(projectRoot, sessionKey, graph);
+
+  return {
+    status,
+    context: contextFromBranch(projectRoot, branch, graph, status, outputResults),
+    graph: graphSummary(graph)
+  };
+}
+
+export function currentSessionFocus({ projectRoot, payload = {}, env = process.env }) {
+  const sessionKey = resolveHookSessionKey(payload, env);
+  const graph = readSessionGraph(projectRoot, sessionKey);
+  if (!graph) return null;
+  const branch = graph.branches.find((candidate) => candidate.id === graph.activeBranchId);
+  if (!branch) return null;
+  return contextFromBranch(projectRoot, branch, graph, "focus");
 }
 
 export function queryHookContext({ projectRoot, prompt, payload = {}, env = process.env }) {
-  const sessionKey = resolveHookSessionKey(payload, env);
-  const previous = readSessionRoute(projectRoot, sessionKey);
-  // Automatic routing is a one-shot session bootstrap. Follow-up turns may be
-  // acknowledgements, refusals, clarifications, or genuinely new work; a
-  // stateless hook cannot distinguish them reliably. Leave later routing to
-  // the Atlas skill/CLI, which runs with the full conversational intent.
-  if (previous) return null;
-
-  const context = queryContext({
-    projectRoot,
-    prompt,
-    cacheOnly: true
-  });
-
-  if (!confidentInitialRoute(context)) return null;
-  writeSessionRoute(projectRoot, sessionKey, context);
-  return context;
+  const focus = currentSessionFocus({ projectRoot, payload, env });
+  if (focus) return focus;
+  return updateSessionRoute({ projectRoot, prompt, payload, env }).context;
 }
 
 export function formatContext(context) {
+  const mode = context.routeState?.mode ?? "route";
+  if (mode === "unchanged") {
+    return `[Atlas route] unchanged; branch=${context.routeState.branchId}; ` +
+      "当前知识节点已覆盖完整任务意图，无需重复读取。";
+  }
   if (context.results.length === 0) return "";
+  const stateSuffix = context.routeState?.branchId
+    ? `; branch=${context.routeState.branchId}; branches=${context.routeState.branchCount}`
+    : "";
+  const header = mode === "focus"
+    ? `[Atlas focus] project=${context.root}; branch=${context.routeState.branchId}; branches=${context.routeState.branchCount}`
+    : `[Atlas route${mode === "route" || mode === "created" || mode === "unscoped" ? "" : `:${mode}`}] project=${context.root}${stateSuffix}`;
+  const instruction = mode === "focus"
+    ? "继续使用以下活动知识节点；不要因当前一句话重新检索或重复读取。准备执行超出这些节点的新非平凡操作前，使用完整会话意图运行 atlas-router route。"
+    : mode === "expanded"
+      ? "当前分支已扩展；只读取以下新增节点，旧节点保持有效。"
+      : "按以下顺序只读取相关路径/章节；这些资料足以执行时不要遍历源码，只有冲突、缺失或失败再扩展；易漂移事实仍以当前配置或运行态复核：";
   const lines = [
-    `[Atlas route] project=${context.root}`,
-    "按以下顺序只读取相关路径/章节；这些资料足以执行时不要遍历源码，只有冲突、缺失或失败再扩展；易漂移事实仍以当前配置或运行态复核："
+    header,
+    instruction
   ];
   context.results.forEach((result, index) => {
     const section = result.heading ? `#${result.heading}` : "";

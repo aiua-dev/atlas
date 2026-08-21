@@ -6,12 +6,14 @@ import process from "node:process";
 import { installCodexPlugin, packageRootFrom } from "../lib/codex-install.mjs";
 import {
   buildIndex,
+  currentSessionFocus,
   diagnose,
   findProjectRoot,
   formatContext,
   initProject,
   queryContext,
-  queryHookContext
+  queryHookContext,
+  updateSessionRoute
 } from "../lib/core.mjs";
 
 function usage(exitCode = 0) {
@@ -23,6 +25,8 @@ Usage:
   atlas-router init [ROOT] [--trellis]
   atlas-router index [ROOT]
   atlas-router context [--root ROOT] --prompt TEXT [--json] [--refresh]
+  atlas-router route [--root ROOT] --prompt TEXT [--json] [--refresh]
+  atlas-router focus [--root ROOT] [--json]
   atlas-router doctor [ROOT] [--json]
   atlas-router hook
 
@@ -63,7 +67,7 @@ async function main() {
   const command = process.argv[2];
   if (!command || ["-h", "--help", "help"].includes(command)) usage(0);
   if (["-v", "--version", "version"].includes(command)) {
-    process.stdout.write("0.2.1\n");
+    process.stdout.write("0.3.0\n");
     return;
   }
 
@@ -104,6 +108,38 @@ async function main() {
     const refresh = process.argv.includes("--refresh");
     const context = queryContext({ projectRoot: root, prompt, forceRefresh: refresh, cacheOnly: !refresh });
     process.stdout.write(process.argv.includes("--json") ? `${JSON.stringify(context, null, 2)}\n` : `${formatContext(context)}\n`);
+    return;
+  }
+
+  if (command === "route") {
+    const root = resolveRoot(option("--root"));
+    const prompt = option("--prompt") ?? "";
+    if (!prompt) throw new Error("route 需要 --prompt TEXT");
+    const existingFocus = currentSessionFocus({ projectRoot: root });
+    const result = updateSessionRoute({
+      projectRoot: root,
+      prompt,
+      forceRefresh: process.argv.includes("--refresh"),
+      expandExclusive: Boolean(existingFocus)
+    });
+    if (process.argv.includes("--json")) {
+      process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
+    } else if (result.context) {
+      process.stdout.write(`${formatContext(result.context)}\n`);
+    } else {
+      process.stdout.write("[Atlas route] no-match；保持当前活动分支，不覆盖已有知识节点。\n");
+    }
+    return;
+  }
+
+  if (command === "focus") {
+    const root = resolveRoot(option("--root"));
+    const context = currentSessionFocus({ projectRoot: root });
+    if (process.argv.includes("--json")) {
+      process.stdout.write(`${JSON.stringify(context, null, 2)}\n`);
+    } else if (context) {
+      process.stdout.write(`${formatContext(context)}\n`);
+    }
     return;
   }
 

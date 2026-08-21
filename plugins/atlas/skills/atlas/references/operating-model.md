@@ -15,6 +15,28 @@ Atlas and Trellis can both use `UserPromptSubmit`. Each hook must be independent
 do not assume order, shared files, or another hook's output. Atlas only injects
 knowledge paths and sections; Trellis may inject task/workflow state.
 
+## Keep long sessions routed incrementally
+
+Atlas stores a session-scoped active route graph in the generated cache, never
+in project knowledge. The raw prompt and raw session identifier are not stored.
+The session identity is hashed, and branches contain only routed paths,
+sections, roles, and timestamps.
+
+- The prompt hook restores the active branch; it does not infer a new semantic
+  intent from every latest sentence.
+- The `route` command may use a deterministic explicit route to activate or add
+  a branch.
+- Before a new non-trivial execution boundary, the model summarizes the full
+  conversational intent and calls `atlas-router route`.
+- An overlapping route expands the current branch with delta nodes.
+- A disjoint route creates another preserved branch.
+- Routing back to an existing owner reactivates that branch.
+- `atlas-router focus` reports the current branch without scanning the project.
+
+This makes intent classification conservative: uncertainty keeps the current
+focus instead of replacing it. The model decides when execution crosses a
+boundary; Atlas deterministically merges and retrieves paths.
+
 ## Route without full reads
 
 Prompt handling uses progressive disclosure:

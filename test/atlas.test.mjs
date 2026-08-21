@@ -6,11 +6,14 @@ import { spawnSync } from "node:child_process";
 import test from "node:test";
 import {
   buildIndex,
+  cachePathFor,
+  currentSessionFocus,
   diagnose,
   formatContext,
   queryContext,
   queryHookContext,
-  resolveHookSessionKey
+  resolveHookSessionKey,
+  updateSessionRoute
 } from "../plugins/atlas/lib/core.mjs";
 
 const repository = path.resolve(import.meta.dirname, "..");
@@ -90,7 +93,7 @@ test("maintained sources outrank repetitive Trellis task prose", () => withCache
   assert.ok(task < 0 || canonical < task);
 }));
 
-test("session-pinned hook routes ignore arbitrary follow-up wording without a refusal dictionary", () => withCache(() => {
+test("hook restores active focus for arbitrary follow-up wording without rerouting", () => withCache(() => {
   const root = projectCopy();
   buildIndex(root);
   const payload = { session_id: "session-follow-up-test" };
@@ -98,13 +101,43 @@ test("session-pinned hook routes ignore arbitrary follow-up wording without a re
   const refusal = queryHookContext({ projectRoot: root, prompt: "这回先算了吧", payload, env: {} });
   const topicalRefusal = queryHookContext({ projectRoot: root, prompt: "consumer 这回也先别弄了", payload, env: {} });
   const acknowledgement = queryHookContext({ projectRoot: root, prompt: "照刚才说的继续", payload, env: {} });
-  const differentTask = queryHookContext({ projectRoot: root, prompt: "帮我测试另一个 consumer 接口", payload, env: {} });
+  const differentTask = queryHookContext({ projectRoot: root, prompt: "implementation constraint", payload, env: {} });
 
   assert.deepEqual(first.matchedRoutes, ["consumer-api-test"]);
-  assert.equal(refusal, null);
-  assert.equal(topicalRefusal, null);
-  assert.equal(acknowledgement, null);
-  assert.equal(differentTask, null);
+  assert.equal(first.routeState.mode, "created");
+  for (const followUp of [refusal, topicalRefusal, acknowledgement, differentTask]) {
+    assert.equal(followUp.routeState.mode, "focus");
+    assert.equal(followUp.routeState.branchId, first.routeState.branchId);
+    assert.deepEqual(followUp.results.map((result) => result.path), first.results.map((result) => result.path));
+  }
+}));
+
+test("long sessions expand, branch, and reactivate routes without losing old nodes", () => withCache(() => {
+  const root = projectCopy();
+  buildIndex(root);
+  const payload = { session_id: "long-session-route-graph" };
+  const options = { projectRoot: root, payload, env: {} };
+
+  const created = updateSessionRoute({ ...options, prompt: "帮我测试 consumer 接口" });
+  const expanded = updateSessionRoute({
+    ...options,
+    prompt: "帮我测试 consumer 接口，并核对 consumer token 契约",
+    expandExclusive: true
+  });
+  const branched = updateSessionRoute({ ...options, prompt: "implementation constraint" });
+  const reactivated = updateSessionRoute({ ...options, prompt: "帮我测试 consumer 接口" });
+  const focus = currentSessionFocus(options);
+
+  assert.equal(created.status, "created");
+  assert.equal(expanded.status, "expanded");
+  assert.ok(expanded.context.results.length > 0);
+  assert.equal(branched.status, "branched");
+  assert.equal(branched.graph.branchCount, 2);
+  assert.equal(reactivated.status, "reactivated");
+  assert.equal(reactivated.graph.branchCount, 2);
+  assert.equal(focus.routeState.branchId, created.context.routeState.branchId);
+  assert.ok(focus.results.some((result) => result.path === "docs/reference/consumer-auth-orders.md"));
+  assert.ok(reactivated.graph.branches.some((branch) => branch.nodeCount === 1));
 }));
 
 test("hook session identity accepts Codex thread environment without storing raw ids", () => {
@@ -113,6 +146,63 @@ test("hook session identity accepts Codex thread environment without storing raw
   assert.match(key, /^[a-f0-9]{24}$/);
   assert.equal(key.includes("thread-secret-value"), false);
 });
+
+test("route and focus CLI commands share the Codex session graph", () => withCache(() => {
+  const root = projectCopy();
+  buildIndex(root);
+  const env = { ...process.env, CODEX_SESSION_ID: "atlas-cli-route-session" };
+  const routed = spawnSync(process.execPath, [
+    cli, "route", "--root", root, "--prompt", "帮我测试 consumer 接口", "--json"
+  ], { encoding: "utf8", env });
+  assert.equal(routed.status, 0, routed.stderr);
+  const routeResult = JSON.parse(routed.stdout);
+  assert.equal(routeResult.status, "created");
+  assert.equal(routeResult.graph.branchCount, 1);
+
+  const focused = spawnSync(process.execPath, [cli, "focus", "--root", root, "--json"], {
+    encoding: "utf8",
+    env
+  });
+  assert.equal(focused.status, 0, focused.stderr);
+  const focus = JSON.parse(focused.stdout);
+  assert.equal(focus.routeState.mode, "focus");
+  assert.equal(focus.routeState.branchId, routeResult.context.routeState.branchId);
+}));
+
+test("session graph migrates v1 state and persists neither raw prompt nor raw session id", () => withCache(() => {
+  const root = projectCopy();
+  buildIndex(root);
+  const rawSession = "raw-session-id-must-not-persist";
+  const sessionKey = resolveHookSessionKey({ session_id: rawSession }, {});
+  const sessionFile = path.join(path.dirname(cachePathFor(root)), "sessions", `${sessionKey}.json`);
+  fs.mkdirSync(path.dirname(sessionFile), { recursive: true });
+  fs.writeFileSync(sessionFile, JSON.stringify({
+    version: 1,
+    root,
+    signature: "legacy-signature",
+    updatedAt: "2026-08-21T00:00:00.000Z",
+    route: {
+      matchedRoutes: ["consumer-api-test"],
+      results: [{
+        path: "docs/reference/consumer-auth-orders.md",
+        heading: "iOS 测试会话",
+        line: 7,
+        endLine: 11
+      }]
+    }
+  }), "utf8");
+
+  const focus = currentSessionFocus({ projectRoot: root, payload: { session_id: rawSession }, env: {} });
+  assert.equal(focus.routeState.mode, "focus");
+  assert.equal(focus.results[0].path, "docs/reference/consumer-auth-orders.md");
+
+  const rawPrompt = "consumer token secret-looking-prompt-marker";
+  updateSessionRoute({ projectRoot: root, prompt: rawPrompt, payload: { session_id: rawSession }, env: {} });
+  const persisted = fs.readFileSync(sessionFile, "utf8");
+  assert.doesNotMatch(persisted, /raw-session-id-must-not-persist/);
+  assert.doesNotMatch(persisted, /secret-looking-prompt-marker/);
+  assert.match(persisted, /"version": 2/);
+}));
 
 test("hook is silent without opt-in and emits valid bounded context with config", () => withCache(() => {
   const noConfig = fs.mkdtempSync(path.join(os.tmpdir(), "atlas-router-empty-"));
@@ -144,7 +234,10 @@ test("hook is silent without opt-in and emits valid bounded context with config"
     env: hookEnv
   });
   assert.equal(followUp.status, 0, followUp.stderr);
-  assert.equal(followUp.stdout, "");
+  const followUpPayload = JSON.parse(followUp.stdout);
+  assert.match(followUpPayload.hookSpecificOutput.additionalContext, /\[Atlas focus\]/);
+  assert.match(followUpPayload.hookSpecificOutput.additionalContext, /不要因当前一句话重新检索/);
+  assert.doesNotMatch(followUpPayload.hookSpecificOutput.additionalContext, /这回先算了吧/);
 }));
 
 test("doctor detects Trellis without treating its project hook as a dependency", () => withCache(() => {
