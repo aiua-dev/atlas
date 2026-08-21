@@ -48,12 +48,18 @@ codex plugin marketplace add aiua-dev/atlas-context-router
 codex plugin add atlas@atlas-router
 ```
 
-After the npm package is published:
+The npm package installs both the CLI and the bundled Codex plugin without
+cloning the GitHub repository:
 
 ```bash
 npm install --global @a1ua/atlas
+atlas-router install
 atlas-router --help
 ```
+
+`atlas-router install` registers the marketplace from the global npm package,
+installs `atlas@atlas-router`, and handles the legacy standalone Skill. It does
+not download the GitHub repository again.
 
 ## Configure a project
 

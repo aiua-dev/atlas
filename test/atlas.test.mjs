@@ -100,3 +100,43 @@ test("doctor detects Trellis without treating its project hook as a dependency",
   assert.equal(result.archiveExcluded, true);
   assert.match(result.hookContract, /独立运行/);
 }));
+
+test("npm-bundled install command registers the bundled Codex plugin", () => {
+  const codexHome = fs.mkdtempSync(path.join(os.tmpdir(), "atlas-codex-home-"));
+  const fakeBin = fs.mkdtempSync(path.join(os.tmpdir(), "atlas-codex-bin-"));
+  const log = path.join(fakeBin, "calls.log");
+  const fakeCodex = path.join(fakeBin, "codex");
+  fs.mkdirSync(path.join(codexHome, "skills", "atlas"), { recursive: true });
+  fs.writeFileSync(path.join(codexHome, "skills", "atlas", "SKILL.md"), "---\nname: atlas\n---\n");
+  fs.writeFileSync(path.join(codexHome, "config.toml"), "model = \"test\"\n");
+  fs.writeFileSync(fakeCodex, `#!/bin/sh
+printf '%s\\n' "$*" >> "$ATLAS_TEST_LOG"
+case "$*" in
+  "plugin list") printf '%s\\n' 'atlas@atlas-router  installed, enabled' ;;
+  "plugin marketplace list") printf '%s\\n' 'atlas-router  /old/source' ;;
+  "--version") printf '%s\\n' 'codex-cli test' ;;
+esac
+`, { mode: 0o755 });
+
+  const installed = spawnSync(process.execPath, [cli, "install", "--json"], {
+    encoding: "utf8",
+    env: {
+      ...process.env,
+      ATLAS_CODEX_BIN: fakeCodex,
+      ATLAS_TEST_LOG: log,
+      CODEX_HOME: codexHome
+    }
+  });
+  assert.equal(installed.status, 0, installed.stderr);
+  const result = JSON.parse(installed.stdout);
+  assert.equal(result.plugin, "atlas@atlas-router");
+  assert.equal(result.packageRoot, repository);
+  assert.equal(result.legacyDisabled, true);
+
+  const calls = fs.readFileSync(log, "utf8");
+  assert.match(calls, /plugin remove atlas@atlas-router/);
+  assert.match(calls, /plugin marketplace remove atlas-router/);
+  assert.match(calls, new RegExp(`plugin marketplace add ${repository.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}`));
+  assert.match(calls, /plugin add atlas@atlas-router/);
+  assert.match(fs.readFileSync(path.join(codexHome, "config.toml"), "utf8"), /enabled = false/);
+});

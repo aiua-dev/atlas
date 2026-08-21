@@ -44,12 +44,16 @@ codex plugin marketplace add aiua-dev/atlas-context-router
 codex plugin add atlas@atlas-router
 ```
 
-npm 包发布后可使用：
+npm 包可以同时安装 CLI 和随包携带的 Codex 插件，不需要再克隆 GitHub 仓库：
 
 ```bash
 npm install --global @a1ua/atlas
+atlas-router install
 atlas-router --help
 ```
+
+`atlas-router install` 会从 npm 全局安装目录注册本地 marketplace、安装
+`atlas@atlas-router` 并处理旧版独立 Skill。它不会再次下载 GitHub 仓库。
 
 ## 配置项目
 

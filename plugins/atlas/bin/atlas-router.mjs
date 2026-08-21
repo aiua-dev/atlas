@@ -3,6 +3,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import process from "node:process";
+import { installCodexPlugin, packageRootFrom } from "../lib/codex-install.mjs";
 import {
   buildIndex,
   diagnose,
@@ -17,6 +18,7 @@ function usage(exitCode = 0) {
   stream.write(`Atlas Context Router
 
 Usage:
+  atlas-router install [--json]
   atlas-router init [ROOT] [--trellis]
   atlas-router index [ROOT]
   atlas-router context [--root ROOT] --prompt TEXT [--json] [--refresh]
@@ -61,6 +63,21 @@ async function main() {
   if (!command || ["-h", "--help", "help"].includes(command)) usage(0);
   if (["-v", "--version", "version"].includes(command)) {
     process.stdout.write("0.2.0\n");
+    return;
+  }
+
+  if (["install", "install-codex"].includes(command)) {
+    const result = installCodexPlugin({ packageRoot: packageRootFrom(import.meta.url) });
+    if (process.argv.includes("--json")) {
+      process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
+    } else {
+      process.stdout.write([
+        `Codex plugin installed: ${result.plugin}`,
+        `marketplace source: ${result.packageRoot}`,
+        `legacy standalone skill: ${result.legacyDisabled ? "disabled" : "not present"}`,
+        "请在 Codex 的 /hooks 页面确认一次 Atlas hook 信任。"
+      ].join("\n") + "\n");
+    }
     return;
   }
 

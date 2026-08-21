@@ -24,7 +24,8 @@
   ],
   "scripts": {
     "test": "node --test",
-    "check": "npm test && node plugins/atlas/bin/atlas-router.mjs doctor test/fixtures/project"
+    "check": "npm test && node plugins/atlas/bin/atlas-router.mjs doctor test/fixtures/project",
+    "prepublishOnly": "npm test"
   },
   "engines": {
     "node": ">=20"
