@@ -1,5 +1,5 @@
 {
-  "name": "atlas-context-router",
+  "name": "@a1ua/atlas",
   "version": "0.2.0",
   "description": "Incremental project knowledge routing for Codex, with Trellis-aware source precedence.",
   "homepage": "https://github.com/aiua-dev/atlas-context-router#readme",
@@ -28,6 +28,9 @@
   },
   "engines": {
     "node": ">=20"
+  },
+  "publishConfig": {
+    "access": "public"
   },
   "keywords": [
     "codex",

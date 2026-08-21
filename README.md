@@ -47,7 +47,7 @@ codex plugin add atlas@atlas-router
 npm 包发布后可使用：
 
 ```bash
-npm install --global atlas-context-router
+npm install --global @a1ua/atlas
 atlas-router --help
 ```
 

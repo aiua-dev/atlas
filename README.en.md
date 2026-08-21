@@ -51,7 +51,7 @@ codex plugin add atlas@atlas-router
 After the npm package is published:
 
 ```bash
-npm install --global atlas-context-router
+npm install --global @a1ua/atlas
 atlas-router --help
 ```
 
