@@ -11,6 +11,13 @@ and not a second task database. Atlas has two modes: **route before work** and
 
 ## Route before work
 
+If the current model input already contains `[Atlas route]` or `[Atlas focus]`,
+this routing step is already complete. Follow the injected paths and ranges directly;
+do not rerun `context`, `route`, or `focus` for the same intent, and do not
+locate this skill again. Never construct a path inside the Codex plugin cache or
+pin a plugin version directory; use the installed `atlas-router` command for any
+later route operation.
+
 1. Find the nearest `.atlas/config.json`.
 2. Run the installed router with the current request:
 
@@ -18,8 +25,10 @@ and not a second task database. Atlas has two modes: **route before work** and
    atlas-router context --prompt "<current request>"
    ```
 
-3. Read only the returned files and line ranges first. Follow at most the
-   returned one-hop relations unless evidence requires broader discovery.
+3. Make the returned files and line ranges the first repository-content read.
+   Do not precede them with `git status`, directory walks, broad grep, or source
+   scans. Follow at most the returned one-hop relations unless evidence requires
+   broader discovery.
 4. Treat the route as a discovery hint, not authority. Re-verify facts that may
    have drifted against current code, schema, tests, configuration, or runtime.
 5. If no route is returned, use focused search. Do not compensate by traversing

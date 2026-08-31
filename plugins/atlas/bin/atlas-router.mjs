@@ -67,7 +67,7 @@ async function main() {
   const command = process.argv[2];
   if (!command || ["-h", "--help", "help"].includes(command)) usage(0);
   if (["-v", "--version", "version"].includes(command)) {
-    process.stdout.write("0.3.0\n");
+    process.stdout.write("0.3.1\n");
     return;
   }
 
@@ -80,7 +80,8 @@ async function main() {
         `Codex plugin installed: ${result.plugin}`,
         `marketplace source: ${result.packageRoot}`,
         `legacy standalone skill: ${result.legacyDisabled ? "disabled" : "not present"}`,
-        "请在 Codex 的 /hooks 页面确认一次 Atlas hook 信任。"
+        "必须完全退出并重新打开 Codex Desktop，使运行中的 app-server 重新加载插件 hooks；只新建任务不等于重启。",
+        "重启后请在 Codex 的 /hooks 页面确认一次 Atlas hook 信任。"
       ].join("\n") + "\n");
     }
     return;
@@ -168,7 +169,7 @@ async function main() {
     if (!root || !payload.prompt) return;
     const context = queryHookContext({ projectRoot: root, prompt: payload.prompt, payload });
     if (!context) return;
-    const additionalContext = formatContext(context);
+    const additionalContext = formatContext(context, { hook: true });
     if (!additionalContext) return;
     process.stdout.write(JSON.stringify({
       hookSpecificOutput: {

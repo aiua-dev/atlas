@@ -63,7 +63,12 @@ test("explicit intent route returns canonical auth, topology, and OpenAPI in ord
   assert.equal(context.results[0].role, "canonical-doc");
   assert.equal(context.results.length, 3);
   assert.equal(context.results[2].heading, "");
-  assert.match(formatContext(context), /Trellis 适配/);
+  const formatted = formatContext(context, { hook: true });
+  assert.match(formatted, /Atlas hook 已在模型开始工作前完成路由/);
+  assert.match(formatted, /第一项仓库内容操作/);
+  assert.match(formatted, /不要先运行 git status、find、全项目 rg 或源码扫描/);
+  assert.match(formatted, /不要探测插件缓存或 Atlas skill 的版本路径/);
+  assert.match(formatted, /Trellis 适配/);
 }));
 
 test("canonical documentation ranks above Trellis task evidence for generic queries", () => withCache(() => {
@@ -279,6 +284,7 @@ esac
   assert.equal(result.plugin, "atlas@atlas-router");
   assert.equal(result.packageRoot, repository);
   assert.equal(result.legacyDisabled, true);
+  assert.equal(result.restartRequired, true);
 
   const calls = fs.readFileSync(log, "utf8");
   assert.match(calls, /plugin remove atlas@atlas-router/);

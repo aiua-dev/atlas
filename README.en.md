@@ -2,85 +2,79 @@
 
 [简体中文](README.md) | English
 
-Atlas makes project knowledge **readable by route** and **writable by canonical
-ownership**. It complements Trellis instead of competing with it:
+Atlas is a project knowledge router for Codex. Before work starts, it gives the
+model only the documents, sections, and read order needed for the current task.
+After verification, it reconciles durable findings into their existing source
+of truth.
 
-- Trellis owns active task state, workflow, and resumability.
-- Atlas owns knowledge discovery, source precedence, and durable reconciliation.
-- `docs/`, code, schemas, configuration, and runtime remain the actual sources
-  of truth; `.atlas/config.json` only points to them.
+> The npm package has moved to `@aiua/atlas`; the former `@a1ua/atlas` scope is
+> no longer used.
 
-## Why it is fast
+It is designed to answer three practical questions instead of injecting more
+documentation into every prompt:
 
-Atlas does not inject a documentation tree or read every file for each prompt.
-It stores a generated index outside the repository, matches explicit intent
-routes first, ranks paths and headings second, follows at most one link hop, and
-injects only a bounded list of paths and line ranges.
+- **What should Codex read?** Select the smallest relevant set from docs,
+  contracts, runbooks, ADRs, and Trellis artifacts.
+- **In what order?** Prefer current sources of truth, then constraints, active
+  task intent, and historical evidence.
+- **Where should findings go?** Update the maintained owner instead of copying
+  facts into Trellis, Memory, or a new parallel directory.
 
-Only the explicit `atlas-router index` command scans configured knowledge
-roots. Prompt hooks never initiate that scan. Unchanged files are reused by
-metadata and their contents are not reread. Trellis archives and runtime
-artifacts are excluded by default.
+## Quick start
 
-Atlas maintains a lightweight **active route graph** for each Codex session.
-The prompt hook restores the current focus instead of semantically searching
-the latest sentence, so arbitrary acknowledgements or refusals need no word
-blacklist. Before executing non-trivial work across a knowledge boundary, the
-Atlas skill calls `atlas-router route` with full conversational intent.
-Overlapping results add only new nodes, disjoint results create a branch, and
-returning to an earlier domain reactivates its preserved branch. The graph is
-stored outside the repository, while the hook injects only a bounded current
-focus.
-
-## Install
+Atlas requires Node.js 20+ and an installed Codex CLI.
 
 ```bash
-git clone https://github.com/aiua-dev/atlas-context-router.git
-cd atlas-context-router
-./install.sh
-```
-
-The installer:
-
-- installs the `atlas-router` CLI globally;
-- registers the repository as a Codex marketplace;
-- installs the `atlas@atlas-router` plugin;
-- preserves but disables an older `~/.codex/skills/atlas` installation to avoid
-  duplicate loading.
-
-After the first installation, review `/hooks` in Codex once to trust the plugin
-hook.
-
-You can also install directly from the GitHub marketplace:
-
-```bash
-codex plugin marketplace add aiua-dev/atlas-context-router
-codex plugin add atlas@atlas-router
-```
-
-The npm package installs both the CLI and the bundled Codex plugin without
-cloning the GitHub repository:
-
-```bash
-npm install --global @a1ua/atlas
+npm install --global @aiua/atlas
 atlas-router install
-atlas-router --help
 ```
 
-`atlas-router install` registers the marketplace from the global npm package,
-installs `atlas@atlas-router`, and handles the legacy standalone Skill. It does
-not download the GitHub repository again.
-
-## Configure a project
+After installing or upgrading, fully quit and reopen Codex Desktop so the
+running `app-server` reloads plugin hooks. Creating a new task is not a process
+restart. Then initialize a project:
 
 ```bash
 cd PROJECT_ROOT
 atlas-router init . --trellis
+atlas-router index .
+atlas-router doctor .
 ```
 
-Commit `.atlas/config.json`. The generated index stays in the user's cache and
-does not enter the project repository. Add an explicit intent route when the
-same request always requires the same read chain:
+Commit the generated `.atlas/config.json`. The index and session route graph
+remain in the user's cache and do not enter the repository.
+
+## How it works
+
+```text
+User request
+  → UserPromptSubmit hook queries the existing index
+  → returns a small set of paths, sections, line ranges, and reasons
+  → Codex reads those sources first and performs the task
+  → focused discovery happens only when evidence is missing or conflicting
+  → verified findings update an existing owner, or report no durable update
+```
+
+The prompt hook never scans the repository. Only `atlas-router index` reads the
+configured knowledge sources, and subsequent indexing reuses unchanged files by
+metadata. Trellis archives, runtime state, `node_modules`, and Git data are
+excluded by default.
+
+For long conversations, Atlas keeps a lightweight active route graph per Codex
+session:
+
+- Continuing in the same domain restores the active branch instead of searching
+  the latest sentence.
+- Expanding an intent adds only new nodes.
+- Switching domains preserves the old branch and creates another.
+- Returning to an earlier domain reactivates its branch.
+
+Control replies such as “continue” or “do not create a task” therefore do not
+erase useful project context.
+
+## Configure a fixed read chain
+
+When a request always needs the same sources, add an explicit route to
+`.atlas/config.json`:
 
 ```json
 {
@@ -100,56 +94,109 @@ same request always requires the same read chain:
 }
 ```
 
-Build the index and inspect the route:
+Inspect the result:
 
 ```bash
-atlas-router index .
-atlas-router context --root . --prompt "帮我测试 consumer 接口" --json
-atlas-router route --root . --prompt "smoke-test order sync, then verify its database write boundary"
-atlas-router focus --root .
-atlas-router doctor .
+atlas-router context --root . --prompt "test the consumer API"
 ```
 
-`context` is a stateless lookup, `route` incrementally updates the current Codex
-session's active route graph, and `focus` shows its current branch. Run
-`atlas-router index` again after maintained knowledge or route configuration
-changes. After establishing the first confident route, the prompt hook only
-restores focus and runs independently from other `UserPromptSubmit` hooks,
-including Trellis.
+## Commands
+
+| Command | Purpose |
+|---|---|
+| `atlas-router install` | Register and install the bundled Codex plugin from the npm package |
+| `atlas-router init . --trellis` | Create `.atlas/config.json` with Trellis source adapters |
+| `atlas-router index .` | Incrementally build the project knowledge index |
+| `atlas-router context --root . --prompt "..."` | Preview a stateless route for one request |
+| `atlas-router route --root . --prompt "..."` | Expand, switch, or reactivate the current session branch |
+| `atlas-router focus --root .` | Show the active branch for the current session |
+| `atlas-router doctor .` | Check configuration, index, Trellis integration, and hook status |
 
 ## Boundary with Trellis
 
+Atlas complements Trellis and does not treat `.trellis` as the default source of
+truth.
+
 | Layer | Owns | Does not own |
 |---|---|---|
-| Atlas route config | Source roles, intent routes, precedence, and context limits | Business facts or task progress |
-| Current code, config, and maintained docs | Current facts, contracts, runbooks, and architectural decisions | Session state |
-| `.trellis/spec/` | Implementation constraints and project conventions | All current business or operational truth |
-| Active Trellis task | Current intent, plans, working evidence, and resumability | The canonical home of durable conclusions |
-| Trellis archive | Historical evidence | Current truth without fresh verification |
+| Current code, configuration, schema, and runtime | Verifiable current facts | Cross-session task state |
+| Maintained docs, contracts, runbooks, and ADRs | Durable knowledge and procedures | Temporary execution state |
+| `.trellis/spec/` | Implementation constraints and project conventions | Every current business fact |
+| Active Trellis tasks | Intent, plans, evidence, and resumability | The only home for durable findings |
+| Trellis archives, chat, and Memory | Historical evidence | Current truth without verification |
 
-## Repository layout
+Trellis answers “where is this task now?” Atlas answers “what knowledge should
+this task read, and where do verified findings belong?” Their
+`UserPromptSubmit` hooks run independently and do not depend on execution order.
 
-```text
-.agents/plugins/marketplace.json   Codex marketplace
-plugins/atlas/                     self-contained Atlas plugin
-  .codex-plugin/plugin.json
-  hooks/hooks.json
-  bin/atlas-router.mjs
-  lib/core.mjs
-  skills/atlas/
-package.json                       npm CLI package
-install.sh                         one-command local installer
-test/                              node:test tests and fixtures
+## Other installation options
+
+Install directly from the GitHub marketplace:
+
+```bash
+codex plugin marketplace add aiua-dev/atlas-context-router
+codex plugin add atlas@atlas-router
 ```
 
-## Development and validation
+Install the CLI and plugin from source:
+
+```bash
+git clone https://github.com/aiua-dev/atlas-context-router.git
+cd atlas-context-router
+./install.sh
+```
+
+The npm package already contains the CLI, skill, and hook, so cloning the GitHub
+repository is not required.
+
+## Upgrade and troubleshooting
+
+Upgrade Atlas:
+
+```bash
+npm install --global @aiua/atlas@latest
+atlas-router install
+```
+
+Fully restart Codex Desktop after an upgrade. If a new task has no Atlas route:
+
+1. Confirm that `atlas@atlas-router` is enabled and trusted on Codex `/hooks`.
+2. Run `atlas-router doctor PROJECT_ROOT`.
+3. Run `atlas-router index PROJECT_ROOT` after changing docs or route config.
+4. Inspect matching with `atlas-router context --root PROJECT_ROOT --prompt "REQUEST"`.
+
+After an explicit route matches, Atlas tells Codex to make the routed files the
+first repository-content read, preventing an initial directory walk, broad
+search, source scan, or plugin version-path probe.
+
+## Development
 
 ```bash
 npm test
+npm run check
 python3 /Users/USER/.codex/skills/.system/plugin-creator/scripts/validate_plugin.py plugins/atlas
 python3 /Users/USER/.codex/skills/.system/skill-creator/scripts/quick_validate.py plugins/atlas/skills/atlas
 npm pack --dry-run
 ```
 
-Do not store secrets in `.atlas/config.json`, the generated index, or route
-output.
+Repository layout:
+
+```text
+.agents/plugins/marketplace.json   Codex marketplace
+plugins/atlas/                     Self-contained Codex plugin
+  .codex-plugin/plugin.json
+  hooks/hooks.json
+  bin/atlas-router.mjs
+  lib/core.mjs
+  skills/atlas/
+package.json                       @aiua/atlas npm package
+install.sh                         One-command source installer
+test/                              node:test tests and fixtures
+```
+
+Do not store secrets, tokens, or temporary credentials in `.atlas/config.json`,
+the generated index, or route output.
+
+## License
+
+[MIT](LICENSE)

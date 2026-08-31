@@ -2,75 +2,66 @@
 
 简体中文 | [English](README.en.md)
 
-Atlas 让项目知识能够**按路由读取**，并按照**当前真源归属**沉淀。它与
-Trellis 分工协作，而不是相互替代：
+Atlas 是面向 Codex 的项目知识路由器：在开始工作前，只把当前任务需要的
+文档、章节和读取顺序交给模型；验证完成后，再把稳定结论归并到已有真源。
 
-- Trellis 管理活动任务状态、工作流和跨会话恢复。
-- Atlas 管理知识发现、来源优先级和长期结论归档。
-- `docs/`、代码、Schema、配置和运行态仍是真正的事实来源；
-  `.atlas/config.json` 只负责指向它们。
+> npm 包已迁移到 `@aiua/atlas`；原 `@a1ua/atlas` 作用域已停用。
 
-## 为什么高效
+它解决的不是“把更多文档塞进上下文”，而是三个更具体的问题：
 
-Atlas 不会在每轮 Prompt 中注入整棵文档树，也不会读取全部文档。它把生成的
-索引存放在仓库之外，先匹配显式意图路由，再对路径和标题进行排序，最多扩展
-一跳关系，最终只注入数量受限的路径和行号范围。
+- **读什么**：从 `docs/`、契约、Runbook、ADR 和 Trellis 工件中选择最小相关集。
+- **按什么顺序读**：优先当前真源，再读取约束、任务意图和历史证据。
+- **结论写到哪里**：更新已有维护者，而不是在 `.trellis`、Memory 或新目录中复制事实。
 
-只有显式执行 `atlas-router index` 才会扫描配置的知识目录，Prompt hook 不会
-触发扫描。未变化的文件通过元数据复用，不会重新读取内容；Trellis 归档和运行
-时产物默认排除。
+## 快速开始
 
-Atlas 为每个 Codex 会话维护一个轻量的**活动路由图**。Prompt hook 每轮只恢复
-当前焦点，不拿最后一句话重新做语义检索，因此“继续”“先算了”等任意表达不
-需要拒绝词黑名单。准备跨知识边界执行新的非平凡操作时，Atlas skill 用完整
-会话意图调用 `atlas-router route`：重叠结果只补新增节点，不相交结果形成新分支，
-返回旧领域时重新激活原分支。旧分支保存在仓库外的会话缓存中，hook 每轮只
-注入当前分支的有限节点。
-
-## 安装
+需要 Node.js 20+ 和已安装的 Codex CLI。
 
 ```bash
-git clone https://github.com/aiua-dev/atlas-context-router.git
-cd atlas-context-router
-./install.sh
-```
-
-安装脚本会完成以下操作：
-
-- 全局安装 `atlas-router` CLI；
-- 将当前仓库注册为 Codex marketplace；
-- 安装 `atlas@atlas-router` 插件；
-- 保留旧的 `~/.codex/skills/atlas`，但将其禁用，避免重复加载。
-
-首次安装后，需要在 Codex 的 `/hooks` 页面确认一次插件 hook 信任。
-
-也可以直接从 GitHub marketplace 安装：
-
-```bash
-codex plugin marketplace add aiua-dev/atlas-context-router
-codex plugin add atlas@atlas-router
-```
-
-npm 包可以同时安装 CLI 和随包携带的 Codex 插件，不需要再克隆 GitHub 仓库：
-
-```bash
-npm install --global @a1ua/atlas
+npm install --global @aiua/atlas
 atlas-router install
-atlas-router --help
 ```
 
-`atlas-router install` 会从 npm 全局安装目录注册本地 marketplace、安装
-`atlas@atlas-router` 并处理旧版独立 Skill。它不会再次下载 GitHub 仓库。
-
-## 配置项目
+安装或升级后，完全退出并重新打开 Codex Desktop，让运行中的 `app-server`
+重新加载插件 hooks；只新建任务不等于重启。然后在目标项目中初始化：
 
 ```bash
 cd PROJECT_ROOT
 atlas-router init . --trellis
+atlas-router index .
+atlas-router doctor .
 ```
 
-将 `.atlas/config.json` 提交到项目仓库。生成的索引保存在用户缓存目录，不进入
-项目仓库。当一种请求始终对应固定读取链时，可以配置显式意图路由：
+提交项目生成的 `.atlas/config.json`。索引和会话路由图保存在用户缓存目录，不进入
+项目仓库。
+
+## 工作方式
+
+```text
+用户请求
+  → UserPromptSubmit hook 查询现有索引
+  → 返回少量路径、章节、行号与读取原因
+  → Codex 先读取这些真源，再执行任务
+  → 只有缺失、冲突或失败时才聚焦扩展
+  → 验证后更新既有真源，或报告 no durable update
+```
+
+Prompt hook 不会扫描仓库。只有显式执行 `atlas-router index` 才会读取配置的知识
+来源；再次索引时，未变化文件通过元数据复用。默认排除 Trellis 归档、运行时目录、
+`node_modules` 和 Git 数据。
+
+长会话中，Atlas 为每个 Codex 会话维护轻量活动路由图：
+
+- 同一领域继续工作时恢复当前分支，不拿最新一句话重新检索。
+- 扩展同一意图时只加入新节点。
+- 切换领域时保存旧分支并建立新分支。
+- 回到旧领域时重新激活原分支。
+
+因此“继续”“先不创建任务”等控制语句不会清空已经找到的知识上下文。
+
+## 配置固定读取链
+
+当一种请求总是需要同一组资料时，在 `.atlas/config.json` 中添加显式路由：
 
 ```json
 {
@@ -90,53 +81,104 @@ atlas-router init . --trellis
 }
 ```
 
-建立索引并检查路由：
+检查匹配结果：
 
 ```bash
-atlas-router index .
-atlas-router context --root . --prompt "帮我测试 consumer 接口" --json
-atlas-router route --root . --prompt "先完成订单同步烟测，再核验其数据库写入边界"
-atlas-router focus --root .
-atlas-router doctor .
+atlas-router context --root . --prompt "帮我测试 consumer 接口"
 ```
 
-`context` 是无状态查询；`route` 使用当前 Codex 会话身份增量更新活动路由图；
-`focus` 查看当前活动分支。维护文档或路由配置变化后，需要重新执行
-`atlas-router index`。Prompt hook 建立首次可信路由后只恢复会话焦点，并且与
-包括 Trellis 在内的其他 `UserPromptSubmit` hooks 独立运行，不依赖执行顺序。
+## 常用命令
 
-## 与 Trellis 的边界
+| 命令 | 用途 |
+|---|---|
+| `atlas-router install` | 从 npm 包注册并安装随包提供的 Codex 插件 |
+| `atlas-router init . --trellis` | 创建项目级 `.atlas/config.json`，并启用 Trellis 来源适配 |
+| `atlas-router index .` | 增量构建项目知识索引 |
+| `atlas-router context --root . --prompt "..."` | 无状态查看一次请求会命中哪些资料 |
+| `atlas-router route --root . --prompt "..."` | 在当前 Codex 会话中扩展、切换或恢复路由分支 |
+| `atlas-router focus --root .` | 查看当前会话的活动分支 |
+| `atlas-router doctor .` | 检查配置、索引、Trellis 适配和 hook 状态 |
+
+## 与 Trellis 的分工
+
+Atlas 不替代 Trellis，也不把 `.trellis` 当作默认真源。
 
 | 层 | 负责内容 | 不负责内容 |
 |---|---|---|
-| Atlas 路由配置 | 来源角色、意图路由、读取优先级和上下文限制 | 业务事实和任务进度 |
-| 当前代码、配置和维护文档 | 当前事实、契约、Runbook 和架构决策 | 会话状态 |
-| `.trellis/spec/` | 实施约束和项目约定 | 全部当前业务或运行事实 |
-| Trellis 活动任务 | 当前意图、计划、工作证据和恢复状态 | 长期结论的唯一真源 |
-| Trellis 归档 | 历史证据 | 未经重新核验的当前事实 |
+| 当前代码、配置、Schema 和运行态 | 当前可验证事实 | 跨会话任务管理 |
+| 维护中的文档、契约、Runbook 和 ADR | 长期知识与操作流程 | 临时执行状态 |
+| `.trellis/spec/` | 实施约束和项目约定 | 全部当前业务事实 |
+| Trellis 活动任务 | 任务意图、计划、证据和恢复状态 | 长期结论的唯一真源 |
+| Trellis 归档、聊天和 Memory | 历史证据 | 未经复核的当前事实 |
 
-## 仓库结构
+Trellis 管理“这项工作做到哪里”；Atlas 管理“这项工作现在应该读取哪些知识，
+验证后的结论属于哪里”。两个 `UserPromptSubmit` hooks 独立运行，不依赖执行顺序。
 
-```text
-.agents/plugins/marketplace.json   Codex marketplace
-plugins/atlas/                     独立 Atlas 插件
-  .codex-plugin/plugin.json
-  hooks/hooks.json
-  bin/atlas-router.mjs
-  lib/core.mjs
-  skills/atlas/
-package.json                       npm CLI 包
-install.sh                         一键本地安装脚本
-test/                              node:test 测试与样本
+## 其他安装方式
+
+直接从 GitHub marketplace 安装：
+
+```bash
+codex plugin marketplace add aiua-dev/atlas-context-router
+codex plugin add atlas@atlas-router
 ```
+
+从源码安装 CLI 和插件：
+
+```bash
+git clone https://github.com/aiua-dev/atlas-context-router.git
+cd atlas-context-router
+./install.sh
+```
+
+npm 包已经包含 CLI、Skill 和 hook，不需要先克隆 GitHub 仓库。
+
+## 升级与排障
+
+升级：
+
+```bash
+npm install --global @aiua/atlas@latest
+atlas-router install
+```
+
+升级后完全重启 Codex Desktop。若新任务没有出现 Atlas 路由：
+
+1. 在 Codex `/hooks` 页面确认 `atlas@atlas-router` 已启用并受信任。
+2. 运行 `atlas-router doctor PROJECT_ROOT`。
+3. 项目文档或路由配置刚修改时，运行 `atlas-router index PROJECT_ROOT`。
+4. 用 `atlas-router context --root PROJECT_ROOT --prompt "REQUEST"` 检查匹配结果。
+
+Atlas 命中显式路由后，会要求 Codex 把路由文件作为第一项仓库内容读取，避免先做
+目录遍历、全项目搜索、源码扫描或插件版本路径探测。
 
 ## 开发与验证
 
 ```bash
 npm test
+npm run check
 python3 /Users/USER/.codex/skills/.system/plugin-creator/scripts/validate_plugin.py plugins/atlas
 python3 /Users/USER/.codex/skills/.system/skill-creator/scripts/quick_validate.py plugins/atlas/skills/atlas
 npm pack --dry-run
 ```
 
-不要在 `.atlas/config.json`、生成索引或路由输出中保存密钥、Token 等秘密信息。
+仓库结构：
+
+```text
+.agents/plugins/marketplace.json   Codex marketplace
+plugins/atlas/                     自包含 Codex 插件
+  .codex-plugin/plugin.json
+  hooks/hooks.json
+  bin/atlas-router.mjs
+  lib/core.mjs
+  skills/atlas/
+package.json                       @aiua/atlas npm 包
+install.sh                         源码一键安装脚本
+test/                              node:test 测试与样本
+```
+
+不要在 `.atlas/config.json`、生成索引或路由输出中保存密钥、Token 或临时凭据。
+
+## License
+
+[MIT](LICENSE)

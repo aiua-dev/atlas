@@ -80,6 +80,7 @@ export function installCodexPlugin({
     packageRoot,
     marketplace: MARKETPLACE,
     plugin: PLUGIN,
-    legacyDisabled
+    legacyDisabled,
+    restartRequired: true
   };
 }

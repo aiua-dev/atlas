@@ -821,7 +821,7 @@ export function queryHookContext({ projectRoot, prompt, payload = {}, env = proc
   return updateSessionRoute({ projectRoot, prompt, payload, env }).context;
 }
 
-export function formatContext(context) {
+export function formatContext(context, { hook = false } = {}) {
   const mode = context.routeState?.mode ?? "route";
   if (mode === "unchanged") {
     return `[Atlas route] unchanged; branch=${context.routeState.branchId}; ` +
@@ -835,10 +835,10 @@ export function formatContext(context) {
     ? `[Atlas focus] project=${context.root}; branch=${context.routeState.branchId}; branches=${context.routeState.branchCount}`
     : `[Atlas route${mode === "route" || mode === "created" || mode === "unscoped" ? "" : `:${mode}`}] project=${context.root}${stateSuffix}`;
   const instruction = mode === "focus"
-    ? "继续使用以下活动知识节点；不要因当前一句话重新检索或重复读取。准备执行超出这些节点的新非平凡操作前，使用完整会话意图运行 atlas-router route。"
+    ? `${hook ? "Atlas hook 已恢复" : "已恢复"}当前活动分支；继续使用以下知识节点，不要因当前一句话重新检索、重复读取或再次加载 Atlas skill。准备执行超出这些节点的新非平凡操作前，才使用完整会话意图运行 atlas-router route。`
     : mode === "expanded"
-      ? "当前分支已扩展；只读取以下新增节点，旧节点保持有效。"
-      : "按以下顺序只读取相关路径/章节；这些资料足以执行时不要遍历源码，只有冲突、缺失或失败再扩展；易漂移事实仍以当前配置或运行态复核：";
+      ? "当前分支已扩展；只读取以下新增节点，旧节点保持有效。不要为同一意图再次运行 context/route/focus，也不要探测插件缓存或 Atlas skill 的版本路径。"
+      : `${hook ? "Atlas hook 已在模型开始工作前完成路由。" : "Atlas 路由已完成。"}第一项仓库内容操作必须是按顺序读取以下路径/章节；不要先运行 git status、find、全项目 rg 或源码扫描。不要为同一意图再次运行 context/route/focus，也不要探测插件缓存或 Atlas skill 的版本路径。资料足以执行时直接执行且不要遍历源码；只有冲突、缺失或失败再做一次聚焦扩展；易漂移事实仍以当前配置或运行态复核：`;
   const lines = [
     header,
     instruction
