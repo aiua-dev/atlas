@@ -1,0 +1,195 @@
+{
+  "date": "2026-09-18",
+  "corpus": "app-manager",
+  "indexedDocuments": 96,
+  "queries": 100,
+  "queryFile": "eval/benchmarks/app-manager-retrieval-benchmark.jsonl",
+  "querySha256": "c267743052ecf0a1fc187fb93aa013f6d62e184023ce0dd2ef423382e80c2804",
+  "corpusEmbeddingFingerprint": "a5862b75745ed2cdee800cd8974470ca",
+  "corpusContentSha256": "9d4c7124c0da079876d193669a86042fa43413506fb23d69ebb2aa0d6cf09828",
+  "model": "Qwen/Qwen3-Embedding-4B",
+  "baselineCoreSha256": "01999c168464e7b46ca8911b20a3b7b94e94e5544d4e95ec1baa1f4c22745a07",
+  "metric": "Top-1 accepts any expected file; nDCG@10 retains zero-gain ranks and deduplicates paths and expectations.",
+  "lexical": {
+    "before": {
+      "top1": 38,
+      "ndcgMean": 0.4885568468085649,
+      "score": 86.85568468085648,
+      "modes": {
+        "lexical": 100
+      }
+    },
+    "after": {
+      "top1": 36,
+      "ndcgMean": 0.5093717174106319,
+      "score": 86.9371717410632,
+      "modes": {
+        "lexical": 100
+      }
+    }
+  },
+  "hybridIndependent": {
+    "before": {
+      "top1": 49,
+      "ndcgMean": 0.6397078375250833,
+      "score": 112.97078375250834,
+      "modes": {
+        "hybrid": 100
+      }
+    },
+    "after": {
+      "top1": 45,
+      "ndcgMean": 0.6233292739309618,
+      "score": 107.33292739309618,
+      "modes": {
+        "explicit": 4,
+        "hybrid": 96
+      }
+    }
+  },
+  "hybridPaired": {
+    "method": "One query embedding per question, shared with both implementations; identical cached document vectors; separate lexical index caches.",
+    "networkRequests": 100,
+    "before": {
+      "top1": 49,
+      "ndcg": 0.6394013813238181,
+      "score": 112.9401381323818,
+      "modes": {
+        "hybrid": 100
+      }
+    },
+    "after": {
+      "top1": 46,
+      "ndcg": 0.6270199763952473,
+      "score": 108.70199763952473,
+      "modes": {
+        "explicit": 4,
+        "hybrid": 96
+      }
+    },
+    "unchangedNonExplicitQueries": 96,
+    "changedQueries": [
+      {
+        "id": "Q01",
+        "expected": [
+          "docs/runbooks/web-admin-deploy.md"
+        ],
+        "before": {
+          "mode": "hybrid",
+          "returned": [
+            "docs/runbooks/web-admin-deploy.md",
+            "docs/runbooks/flyercloud-service-release.md",
+            "docs/reference/deployment-topology.md",
+            "docs/reference/web-admin-runtime.md",
+            "docs/runbooks/local-dev-runtime.md",
+            "docs/runbooks/new-app-service-onboarding.md"
+          ],
+          "top1": true,
+          "ndcg": 1
+        },
+        "after": {
+          "mode": "explicit",
+          "returned": [
+            "docs/reference/deployment-topology.md",
+            "docs/runbooks/web-admin-deploy.md",
+            "docs/runbooks/flyercloud-service-release.md"
+          ],
+          "top1": false,
+          "ndcg": 0.6309297535714574
+        }
+      },
+      {
+        "id": "Q05",
+        "expected": [
+          "docs/runbooks/consumer-order-sync-smoke.md"
+        ],
+        "before": {
+          "mode": "hybrid",
+          "returned": [
+            "docs/runbooks/consumer-order-sync-smoke.md",
+            "docs/reference/consumer-auth-orders.md",
+            "docs/reference/deployment-topology.md",
+            ".trellis/spec/flyer-Cloud/backend/bamai-order-admin-contract.md",
+            ".trellis/spec/flyer-Cloud/backend/consumer-membership-contract.md",
+            ".trellis/spec/flyer-Cloud/backend/quality-guidelines.md"
+          ],
+          "top1": true,
+          "ndcg": 1
+        },
+        "after": {
+          "mode": "explicit",
+          "returned": [
+            "docs/runbooks/consumer-order-sync-smoke.md",
+            "docs/reference/consumer-auth-orders.md",
+            "docs/reference/deployment-topology.md"
+          ],
+          "top1": true,
+          "ndcg": 1
+        }
+      },
+      {
+        "id": "Q71",
+        "expected": [
+          "docs/runbooks/web-admin-deploy.md"
+        ],
+        "before": {
+          "mode": "hybrid",
+          "returned": [
+            "docs/runbooks/web-admin-deploy.md",
+            "docs/reference/deployment-topology.md",
+            "docs/runbooks/flyercloud-service-release.md",
+            "docs/reference/web-admin-runtime.md",
+            "docs/README.md",
+            "docs/openapi.yaml"
+          ],
+          "top1": true,
+          "ndcg": 1
+        },
+        "after": {
+          "mode": "explicit",
+          "returned": [
+            "docs/reference/deployment-topology.md",
+            "docs/runbooks/web-admin-deploy.md",
+            "docs/runbooks/flyercloud-service-release.md"
+          ],
+          "top1": false,
+          "ndcg": 0.6309297535714574
+        }
+      },
+      {
+        "id": "Q80",
+        "expected": [
+          "docs/runbooks/flyercloud-service-release.md"
+        ],
+        "before": {
+          "mode": "hybrid",
+          "returned": [
+            "docs/runbooks/flyercloud-service-release.md",
+            "docs/runbooks/web-admin-deploy.md",
+            "docs/reference/deployment-topology.md",
+            ".trellis/spec/flyer-Cloud/backend/quality-guidelines.md",
+            ".trellis/spec/flyer-Cloud/backend/index.md",
+            "AGENTS.md"
+          ],
+          "top1": true,
+          "ndcg": 1
+        },
+        "after": {
+          "mode": "explicit",
+          "returned": [
+            "docs/reference/deployment-topology.md",
+            "docs/runbooks/web-admin-deploy.md",
+            "docs/runbooks/flyercloud-service-release.md"
+          ],
+          "top1": false,
+          "ndcg": 0.5
+        }
+      }
+    ]
+  },
+  "limitations": [
+    "One corpus and one model; independent service responses can vary.",
+    "Answer-first metrics penalize explicit chains that place prerequisites before the answer.",
+    "No claim of overall retrieval accuracy improvement."
+  ]
+}

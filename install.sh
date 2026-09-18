@@ -14,9 +14,13 @@ echo "[1/2] Install @aiua/atlas"
 npm install --global "$ROOT"
 
 echo "[2/2] Install bundled Codex plugin"
-atlas-router install
+atlas install
 
 cat <<'EOF'
-For each project: atlas-router init . --trellis, edit .atlas/config.json, then atlas-router index .
+Knowledge routing only: atlas init .
+With Trellis tracking:  atlas bootstrap . --platform codex
+Claude Code: use --platform claude for bootstrap, or atlas install --claude . after Atlas init.
+Then edit .atlas/config.json and re-run atlas index . after knowledge changes.
 Fully quit and reopen Codex Desktop after install; creating a new task does not reload the running app-server hooks.
+Claude Code picks up the hook when you open a new session.
 EOF

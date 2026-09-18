@@ -1,0 +1,15 @@
+{"id":"timezone-convention","prompt":"项目的时间字段用哪个时区","expect":["docs/adr/0002-project-timezone-convention.md"],"expectNoRoutes":true,"forbid":[],"why":"时区是决策,真源是 ADR"}
+{"id":"watchtracker-attribution","prompt":"watchtracker 的渠道归因是怎么匹配的","expect":["docs/reference/watchtracker-attribution.md"],"expectNoRoutes":true,"forbid":[],"why":"归因规则由该参考文档独家维护"}
+{"id":"sticker-image-cleaning","prompt":"贴纸的图片数组为什么需要清洗","expect":["docs/reference/watchface-upload.md"],"expectNoRoutes":true,"forbid":[],"why":"上传与图片数组清洗的边界在该参考文档"}
+{"id":"resource-center-categories","prompt":"资源中心的素材分哪几类","expect":["docs/reference/resource-center.md"],"expectNoRoutes":true,"forbid":[],"why":"素材分类属于资源中心参考"}
+{"id":"local-dev-services","prompt":"本地起来要跑哪些服务","expect":["docs/runbooks/local-dev-runtime.md"],"expectNoRoutes":true,"forbid":[],"why":"本地运行事实由该 runbook 维护"}
+{"id":"onboarding-new-service","prompt":"新增一个平级业务服务要先做什么","expect":["docs/runbooks/new-app-service-onboarding.md"],"expectNoRoutes":true,"forbid":[],"why":"接入流程由该 runbook 维护"}
+{"id":"big-integer-id","prompt":"web-admin 里的大整数 ID 怎么处理","expect":["docs/reference/web-admin-runtime.md"],"expectNoRoutes":true,"forbid":[],"why":"运行口径含大整数 ID 约定"}
+{"id":"identity-domains","prompt":"一条 App 链路里有哪三个身份域","expect":["docs/reference/multi-app-service-architecture.md"],"expectNoRoutes":true,"forbid":[],"why":"架构与权威边界在该参考文档"}
+{"id":"bamai-home-entry","prompt":"把脉首页入口怎么调","expect":["docs/reference/bamai-ios-api-guide.md"],"expectNoRoutes":true,"forbid":[],"why":"iOS 公共接口接入说明是该域真源"}
+{"id":"watchface-route-boundary","prompt":"为什么表盘市场前端路由要避开后端 watchface 路径","expect":["docs/adr/0001-watchface-market-route-boundary.md"],"expectNoRoutes":true,"forbid":[],"why":"边界决策的真源是 ADR"}
+{"id":"mismatch-connect-test-db","prompt":"我要连测试库该找谁要地址","expect":["docs/reference/deployment-topology.md"],"expectNoRoutes":true,"forbid":[],"why":"词汇错配:问的是连库地址,真源是部署拓扑;prompt 不含 部署/拓扑/环境"}
+{"id":"mismatch-ops-materials","prompt":"运营上传的物料在系统里怎么组织","expect":["docs/reference/resource-center.md"],"expectNoRoutes":true,"forbid":[],"why":"词汇错配:说物料不说素材,说组织不说分类"}
+{"id":"mismatch-number-distortion","prompt":"数字太大在浏览器里会失真,这有什么约定","expect":["docs/reference/web-admin-runtime.md"],"expectMiss":true,"expectNoRoutes":true,"forbid":[],"why":"词汇错配。已实测:目标文档只含「数字」1 次,而 openapi.yaml 真的含 数字/浏览/浏览器/约定 各 1-2 次 —— 词法上 1 比 4 就该输,匹配器行为正确。故不作硬判据,只要求显式低置信"}
+{"id":"mismatch-new-sibling-service","prompt":"老板让我再接一个同级别的后台,从哪开始","expect":["docs/runbooks/new-app-service-onboarding.md"],"expectNoRoutes":true,"forbid":[],"why":"词汇错配:说同级别不说平级,说后台不说服务"}
+{"id":"mismatch-run-locally","prompt":"我在自己机器上怎么把整套跑起来","expect":["docs/runbooks/local-dev-runtime.md"],"expectMiss":true,"expectNoRoutes":true,"forbid":[],"why":"词汇错配。已实测:目标文档里 机器/自己/整套/跑起来 各 0 次(它写 本机×5、启动×2)。故不作硬判据,只要求显式低置信"}

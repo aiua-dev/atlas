@@ -1,0 +1,97 @@
+{
+  "date": "2026-09-18",
+  "scope": "Explicit current/history views over classified decisions; owner-local topic conflict review and atomic supersession.",
+  "baselineCoreSha256": "ca47f0d4ab90a31a0ad7a941cbd12b575e10777f34bdc021436aa89d13984795",
+  "decisionBenchmark": {
+    "file": "eval/benchmarks/decision-intent.json",
+    "sha256": "8282c5d3069d7d6f219242d534ec6d3ff3d1cec2ee857f890b6ebbc41a541d8d",
+    "before": {
+      "total": 12,
+      "passed": 5,
+      "wrongStatusQueries": 7,
+      "abstentionPassed": 1,
+      "abstentionTotal": 3,
+      "mode": "lexical",
+      "limitation": "Synthetic decision-level acceptance corpus, not an estimate of real-world answer accuracy."
+    },
+    "after": {
+      "total": 12,
+      "passed": 12,
+      "wrongStatusQueries": 0,
+      "abstentionPassed": 3,
+      "abstentionTotal": 3,
+      "mode": "lexical",
+      "limitation": "Synthetic decision-level acceptance corpus, not an estimate of real-world answer accuracy."
+    },
+    "fixedCases": [
+      "D01",
+      "D04",
+      "D05",
+      "D07",
+      "D08",
+      "D09",
+      "D12"
+    ]
+  },
+  "generalRetrieval": {
+    "corpus": "app-manager",
+    "queries": 100,
+    "querySha256": "c267743052ecf0a1fc187fb93aa013f6d62e184023ce0dd2ef423382e80c2804",
+    "lexicalRowsIdentical": true,
+    "lexical": {
+      "top1Count": 36,
+      "ndcgMean": 0.5093717174106319,
+      "score": 86.94
+    },
+    "hybridIndependent": {
+      "top1": 45,
+      "ndcgMean": 0.624,
+      "score": 107.4,
+      "modes": {
+        "explicit": 4,
+        "hybrid": 96
+      }
+    },
+    "hybridPaired": {
+      "networkRequests": 96,
+      "indexDocumentsIdentical": true,
+      "corpusFingerprint": "a5862b75745ed2cdee800cd8974470ca",
+      "changed": [],
+      "summaries": {
+        "before": {
+          "top1": 46,
+          "ndcgMean": 0.6277,
+          "score": 108.77
+        },
+        "after": {
+          "top1": 46,
+          "ndcgMean": 0.6277,
+          "score": 108.77
+        }
+      }
+    }
+  },
+  "validation": {
+    "fullSuite": {
+      "passed": 130,
+      "failed": 0,
+      "skipped": 0
+    },
+    "newContractSuite": "test/decision-intent.test.mjs",
+    "newContractsPassed": 12
+  },
+  "commands": [
+    "ATLAS_VERIFY_PROJECT=/Volumes/Mac-a/proj/proj-integrated/app-manager npm test",
+    "node eval/run-decision-eval.mjs",
+    "node eval/run-retrieval-eval.mjs --repo /Volumes/Mac-a/proj/proj-integrated/app-manager --json",
+    "node eval/run-hybrid-eval.mjs --repo /Volumes/Mac-a/proj/proj-integrated/app-manager --json"
+  ],
+  "limitations": [
+    "Synthetic 12-case acceptance corpus is not representative real-world accuracy.",
+    "Current/history views only select explicit structured decisions; default all covers unclassified prose.",
+    "Explicit routes retain configured states and reading order.",
+    "Topic conflict checks are owner-local and depend on correct applicability scope; no automatic semantic contradiction detection across prose or owners.",
+    "The agent verifies user intent and evidence before selecting a winner.",
+    "No live model acceptance, installation, publication or migration of existing project documents."
+  ]
+}

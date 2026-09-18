@@ -1,0 +1,85 @@
+{
+  "date": "2026-09-18",
+  "scope": "Optional structured decisions in existing canonical Markdown owners; explicit identity updates and lifecycle-aware route references. No general ranking optimization.",
+  "baseline": "Working tree after routing-contract fixes, snapshotted before decision support",
+  "baselineCoreSha256": "f87fc8055950d7a65168bba52933f23a74167938f800d1be6e6ef1566427b019",
+  "corpus": "/Volumes/Mac-a/proj/proj-integrated/app-manager",
+  "queryFile": "eval/benchmarks/app-manager-retrieval-benchmark.jsonl",
+  "querySha256": "c267743052ecf0a1fc187fb93aa013f6d62e184023ce0dd2ef423382e80c2804",
+  "indexCompatibility": {
+    "documents": 96,
+    "documentIndexesIdentical": true,
+    "embeddingFingerprintBefore": "a5862b75745ed2cdee800cd8974470ca",
+    "embeddingFingerprintAfter": "a5862b75745ed2cdee800cd8974470ca",
+    "optedInDecisions": 0
+  },
+  "lexical": {
+    "before": {
+      "total": 100,
+      "top1Count": 36,
+      "ndcgMean": 0.5093717174106319,
+      "score": 86.94
+    },
+    "after": {
+      "total": 100,
+      "top1Count": 36,
+      "ndcgMean": 0.5093717174106319,
+      "score": 86.94
+    },
+    "allRowsIdentical": true
+  },
+  "hybrid": {
+    "after": {
+      "total": 100,
+      "top1": 46,
+      "ndcgMean": 0.627,
+      "score": 108.7,
+      "modes": {
+        "explicit": 4,
+        "hybrid": 96
+      }
+    },
+    "paired": false,
+    "interpretation": "Independent provider responses do not establish an accuracy gain. The corpus has no structured decision blocks."
+  },
+  "contracts": {
+    "suite": "test/decisions.test.mjs",
+    "cases": 14,
+    "passed": 14,
+    "covers": [
+      "Preview with no source/cache writes",
+      "Required rationale, evidence and explicit status",
+      "Idempotence and stale fingerprint rejection",
+      "Preserved owner prose and CRLF",
+      "Settled claim preservation, successor chains and cycles",
+      "Path traversal and symlink boundary",
+      "Custom configured sources and no implicit bootstrap",
+      "Write to reindex to fresh-session retrieval",
+      "Lexical, hybrid, explicit and semantic-only status exposure",
+      "Restored decision state and range without scan or network",
+      "Invalid-source diagnostics and nonzero CLI exit",
+      "Legacy append cannot corrupt decision blocks"
+    ]
+  },
+  "research": {
+    "mode": "source-first",
+    "discoveryFailure": "smart-search doctor: HTTP 429 on main search; fetch available",
+    "commands": [
+      "smart-search doctor --format json",
+      "smart-search fetch https://cognitect.com/blog/2011/11/15/documenting-architecture-decisions --format markdown",
+      "smart-search fetch https://arxiv.org/abs/2410.10813 --format markdown"
+    ],
+    "sources": [
+      "https://cognitect.com/blog/2011/11/15/documenting-architecture-decisions",
+      "https://arxiv.org/abs/2410.10813"
+    ]
+  },
+  "limitations": [
+    "No automatic semantic conflict detection or migration of existing prose.",
+    "Decision identity and supersession are scoped to one owner.",
+    "Status is exposed for agent judgment; accepted-first intent ranking is not implemented.",
+    "Evidence presence and block shape cannot prove truth or downstream model compliance.",
+    "Live AI behavior across Codex/Claude sessions, installation and publication were not tested.",
+    "The 100-query benchmark measures file retrieval on one unannotated project, not decision answer accuracy."
+  ]
+}

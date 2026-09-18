@@ -3,3 +3,7 @@ node_modules/
 .DS_Store
 coverage/
 
+
+# 嵌入服务凭据：本地文件，不进版本库
+.atlas/.env.local
+*.env.local

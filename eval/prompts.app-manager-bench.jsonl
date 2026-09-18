@@ -1,0 +1,100 @@
+{"id":"Q01","prompt":"web-admin 静态站的发布 Runbook 在哪个文件？","expect":["docs/runbooks/web-admin-deploy.md"],"expectRoutes":[],"forbid":[],"why":"file_exact_match / 难度 1"}
+{"id":"Q02","prompt":"项目时区约定记录在哪份 ADR 里？","expect":["docs/adr/0002-project-timezone-convention.md"],"expectRoutes":[],"forbid":[],"why":"file_exact_match / 难度 1"}
+{"id":"Q03","prompt":"多应用服务架构的权威边界写在哪份文档？","expect":["docs/reference/multi-app-service-architecture.md"],"expectRoutes":[],"forbid":[],"why":"file_exact_match / 难度 2"}
+{"id":"Q04","prompt":"服务端对外接口的 OpenAPI 契约文件在哪里？","expect":["docs/openapi.yaml"],"expectRoutes":[],"forbid":[],"why":"file_exact_match / 难度 2"}
+{"id":"Q05","prompt":"消费者订单同步的烟测步骤记录在哪个文件？","expect":["docs/runbooks/consumer-order-sync-smoke.md"],"expectRoutes":[],"forbid":[],"why":"file_exact_match / 难度 2"}
+{"id":"Q06","prompt":"表盘市场上架路由的边界决策记录在哪份 ADR？","expect":["docs/adr/0001-watchface-market-route-boundary.md"],"expectRoutes":[],"forbid":[],"why":"file_exact_match / 难度 3"}
+{"id":"Q07","prompt":"本机开发环境的启动方式记录在哪里？","expect":["docs/runbooks/local-dev-runtime.md"],"expectRoutes":[],"forbid":[],"why":"file_exact_match / 难度 1"}
+{"id":"Q08","prompt":"新接入一个应用服务需要做哪些步骤？","expect":["docs/runbooks/new-app-service-onboarding.md"],"expectRoutes":[],"forbid":[],"why":"file_exact_match / 难度 2"}
+{"id":"Q09","prompt":"表盘看板数据核验的实现约束在 spec 的哪个文件？","expect":[".trellis/spec/flyer-Cloud/backend/quality-guidelines.md"],"expectRoutes":[],"forbid":[],"why":"file_exact_match / 难度 3"}
+{"id":"Q10","prompt":"跨层改动时要遵守的思考指引在哪？","expect":[".trellis/spec/guides/cross-layer-thinking-guide.md"],"expectRoutes":[],"forbid":[],"why":"file_exact_match / 难度 3"}
+{"id":"Q11","prompt":"业务自然日按哪个时区计算？","expect":["docs/adr/0002-project-timezone-convention.md","docs/reference/multi-app-service-architecture.md"],"expectRoutes":[],"forbid":[],"why":"configuration_lookup / 难度 1"}
+{"id":"Q12","prompt":"项目里时间字段统一用什么时区作为业务本地时区？","expect":["docs/adr/0002-project-timezone-convention.md"],"expectRoutes":[],"forbid":[],"why":"configuration_lookup / 难度 2"}
+{"id":"Q13","prompt":"发布到远端之前需要做哪些检查？","expect":["docs/runbooks/web-admin-deploy.md","docs/runbooks/flyercloud-service-release.md"],"expectRoutes":[],"forbid":[],"why":"configuration_lookup / 难度 2"}
+{"id":"Q14","prompt":"flyserver 当前的真源在哪里复核？","expect":["docs/reference/deployment-topology.md"],"expectRoutes":[],"forbid":[],"why":"configuration_lookup / 难度 3"}
+{"id":"Q15","prompt":"后端服务发布时包内配置怎么预检？","expect":["docs/runbooks/flyercloud-service-release.md"],"expectRoutes":[],"forbid":[],"why":"configuration_lookup / 难度 2"}
+{"id":"Q16","prompt":"看板快照的字符预算和每路径块数限制在哪里配置？","expect":[".trellis/spec/flyer-Cloud/backend/quality-guidelines.md"],"expectRoutes":[],"forbid":[],"why":"configuration_lookup / 难度 3"}
+{"id":"Q17","prompt":"多应用架构里 Redis 的使用边界是什么？","expect":["docs/reference/multi-app-service-architecture.md"],"expectRoutes":[],"forbid":[],"why":"configuration_lookup / 难度 2"}
+{"id":"Q18","prompt":"OpenAPI 上传契约有哪些要求？","expect":["docs/reference/multi-app-service-architecture.md"],"expectRoutes":[],"forbid":[],"why":"configuration_lookup / 难度 3"}
+{"id":"Q19","prompt":"Nacos 与 Gateway 之间的契约约定在哪个文档？","expect":["docs/reference/multi-app-service-architecture.md"],"expectRoutes":[],"forbid":[],"why":"configuration_lookup / 难度 2"}
+{"id":"Q20","prompt":"表盘上传的接口约定在哪里？","expect":["docs/reference/watchface-upload.md"],"expectRoutes":[],"forbid":[],"why":"configuration_lookup / 难度 1"}
+{"id":"Q21","prompt":"多应用架构里一条 App 链路的三个身份域分别是什么？","expect":["docs/reference/multi-app-service-architecture.md"],"expectRoutes":[],"forbid":[],"why":"component_location / 难度 2"}
+{"id":"Q22","prompt":"消费者服务的认证接口有哪些？","expect":["docs/reference/consumer-auth-orders.md","docs/reference/multi-app-service-architecture.md"],"expectRoutes":[],"forbid":[],"why":"component_location / 难度 2"}
+{"id":"Q23","prompt":"把脉的订单管理在哪里？","expect":[".trellis/spec/flyer-Cloud/backend/bamai-order-admin-contract.md"],"expectRoutes":[],"forbid":[],"why":"component_location / 难度 3"}
+{"id":"Q24","prompt":"资源中心负责什么？","expect":["docs/reference/resource-center.md"],"expectRoutes":[],"forbid":[],"why":"component_location / 难度 2"}
+{"id":"Q25","prompt":"表盘洞察数据的生成与生命周期在哪个契约里？","expect":[".trellis/spec/flyer-Cloud/backend/watchface-insight-contract.md"],"expectRoutes":[],"forbid":[],"why":"component_location / 难度 3"}
+{"id":"Q26","prompt":"平台账号会话与账号 UI 的跨层契约在哪？","expect":[".trellis/spec/flyer-Cloud/backend/platform-account-contract.md"],"expectRoutes":[],"forbid":[],"why":"component_location / 难度 3"}
+{"id":"Q27","prompt":"web-admin 运行时的环境依赖有哪些？","expect":["docs/reference/web-admin-runtime.md"],"expectRoutes":[],"forbid":[],"why":"component_location / 难度 2"}
+{"id":"Q28","prompt":"表盘 iOS 首页缓存刷新的契约在哪个文件？","expect":[".trellis/spec/flyer-Cloud/backend/watchface-ios-home-cache-refresh-contract.md"],"expectRoutes":[],"forbid":[],"why":"component_location / 难度 3"}
+{"id":"Q29","prompt":"watchtracker 归因是怎么做的？","expect":["docs/reference/watchtracker-attribution.md"],"expectRoutes":[],"forbid":[],"why":"component_location / 难度 2"}
+{"id":"Q30","prompt":"把脉内容管理的列表与编辑器契约在哪里？","expect":[".trellis/spec/flyer-Cloud/backend/bamai-content-admin-contract.md"],"expectRoutes":[],"forbid":[],"why":"component_location / 难度 3"}
+{"id":"Q31","prompt":"watchface 看板的读取接口是什么？","expect":[".trellis/spec/flyer-Cloud/backend/quality-guidelines.md","docs/openapi.yaml"],"expectRoutes":[],"forbid":[],"why":"api_usage / 难度 2"}
+{"id":"Q32","prompt":"表盘看板重建接口怎么用？","expect":[".trellis/spec/flyer-Cloud/backend/quality-guidelines.md"],"expectRoutes":[],"forbid":[],"why":"api_usage / 难度 3"}
+{"id":"Q33","prompt":"表盘看板今日刷新接口有什么限制？","expect":[".trellis/spec/flyer-Cloud/backend/quality-guidelines.md"],"expectRoutes":[],"forbid":[],"why":"api_usage / 难度 3"}
+{"id":"Q34","prompt":"消费者登录接口需要带什么参数？","expect":["docs/reference/consumer-auth-orders.md","docs/openapi.yaml"],"expectRoutes":[],"forbid":[],"why":"api_usage / 难度 2"}
+{"id":"Q35","prompt":"表盘市场的图标目录接口怎么调用？","expect":[".trellis/spec/flyer-Cloud/backend/watchface-admin-content-contract.md","docs/openapi.yaml"],"expectRoutes":[],"forbid":[],"why":"api_usage / 难度 3"}
+{"id":"Q36","prompt":"订单同步接口的入口是哪个？","expect":["docs/reference/consumer-auth-orders.md"],"expectRoutes":[],"forbid":[],"why":"api_usage / 难度 2"}
+{"id":"Q37","prompt":"把脉的统计上报接口怎么用？","expect":["docs/reference/bamai-ios-api-guide.md"],"expectRoutes":[],"forbid":[],"why":"api_usage / 难度 3"}
+{"id":"Q38","prompt":"表盘资源封面接口支持哪些操作？","expect":[".trellis/spec/flyer-Cloud/backend/watchface-resource-cover-contract.md"],"expectRoutes":[],"forbid":[],"why":"api_usage / 难度 3"}
+{"id":"Q39","prompt":"表盘内容接口有哪些？","expect":["docs/reference/watchface-content.md"],"expectRoutes":[],"forbid":[],"why":"api_usage / 难度 2"}
+{"id":"Q40","prompt":"表盘订阅路由管理接口在哪定义？","expect":[".trellis/spec/flyer-Cloud/backend/watchface-subscription-routing-contract.md"],"expectRoutes":[],"forbid":[],"why":"api_usage / 难度 3"}
+{"id":"Q41","prompt":"为什么首页聚合层不直接联表查询各个业务库？","expect":["docs/reference/multi-app-service-architecture.md"],"expectRoutes":[],"forbid":[],"why":"semantic_feature / 难度 2"}
+{"id":"Q42","prompt":"看板为什么用日快照而不是实时聚合？","expect":[".trellis/spec/flyer-Cloud/backend/quality-guidelines.md"],"expectRoutes":[],"forbid":[],"why":"semantic_feature / 难度 3"}
+{"id":"Q43","prompt":"改多应用相关代码前应该先读什么？","expect":["docs/reference/multi-app-service-architecture.md"],"expectRoutes":[],"forbid":[],"why":"semantic_feature / 难度 2"}
+{"id":"Q44","prompt":"业务自然日为什么用服务器时区？","expect":["docs/adr/0002-project-timezone-convention.md"],"expectRoutes":[],"forbid":[],"why":"semantic_feature / 难度 3"}
+{"id":"Q45","prompt":"做跨层改动时要注意什么？","expect":[".trellis/spec/guides/cross-layer-thinking-guide.md"],"expectRoutes":[],"forbid":[],"why":"semantic_feature / 难度 2"}
+{"id":"Q46","prompt":"页面横幅的约定是什么？","expect":[".trellis/spec/app-manager/frontend/index.md"],"expectRoutes":[],"forbid":[],"why":"semantic_feature / 难度 3"}
+{"id":"Q47","prompt":"代码复用要考虑哪些问题？","expect":[".trellis/spec/guides/code-reuse-thinking-guide.md"],"expectRoutes":[],"forbid":[],"why":"semantic_feature / 难度 2"}
+{"id":"Q48","prompt":"表盘内容分发到不同地区的资源怎么处理？","expect":[".trellis/spec/flyer-Cloud/backend/watchface-admin-content-contract.md"],"expectRoutes":[],"forbid":[],"why":"semantic_feature / 难度 3"}
+{"id":"Q49","prompt":"看板的活跃用户口径是怎么定义的？","expect":[".trellis/spec/flyer-Cloud/backend/quality-guidelines.md"],"expectRoutes":[],"forbid":[],"why":"semantic_feature / 难度 3"}
+{"id":"Q50","prompt":"支付数据为什么不能叫收入？","expect":[".trellis/spec/flyer-Cloud/backend/quality-guidelines.md"],"expectRoutes":[],"forbid":[],"why":"semantic_feature / 难度 3"}
+{"id":"Q51","prompt":"后端编译报无效的目标发行版 17 怎么办？","expect":[".trellis/spec/flyer-Cloud/backend/quality-guidelines.md"],"expectRoutes":[],"forbid":[],"why":"error_handling / 难度 3"}
+{"id":"Q52","prompt":"发布失败怎么回滚？","expect":["docs/runbooks/web-admin-deploy.md","docs/runbooks/flyercloud-service-release.md"],"expectRoutes":[],"forbid":[],"why":"error_handling / 难度 2"}
+{"id":"Q53","prompt":"看板数据缺失时接口返回什么？","expect":[".trellis/spec/flyer-Cloud/backend/quality-guidelines.md"],"expectRoutes":[],"forbid":[],"why":"error_handling / 难度 3"}
+{"id":"Q54","prompt":"看板支付汇率取不到时怎么处理？","expect":[".trellis/spec/flyer-Cloud/backend/quality-guidelines.md"],"expectRoutes":[],"forbid":[],"why":"error_handling / 难度 3"}
+{"id":"Q55","prompt":"本地启动失败怎么排查？","expect":["docs/runbooks/local-dev-runtime.md"],"expectRoutes":[],"forbid":[],"why":"error_handling / 难度 2"}
+{"id":"Q56","prompt":"订单同步失败后怎么重试？","expect":["docs/reference/consumer-auth-orders.md","docs/runbooks/consumer-order-sync-smoke.md"],"expectRoutes":[],"forbid":[],"why":"error_handling / 难度 3"}
+{"id":"Q57","prompt":"看板重建失败时事务怎么处理？","expect":[".trellis/spec/flyer-Cloud/backend/quality-guidelines.md"],"expectRoutes":[],"forbid":[],"why":"error_handling / 难度 3"}
+{"id":"Q58","prompt":"看板数据核验发现不一致怎么办？","expect":["docs/runbooks/watchface-dashboard-data-verification.md"],"expectRoutes":[],"forbid":[],"why":"error_handling / 难度 2"}
+{"id":"Q59","prompt":"表盘市场路由冲突怎么处理？","expect":["docs/adr/0001-watchface-market-route-boundary.md"],"expectRoutes":[],"forbid":[],"why":"error_handling / 难度 3"}
+{"id":"Q60","prompt":"静态站发布后验证失败怎么办？","expect":["docs/runbooks/web-admin-deploy.md"],"expectRoutes":[],"forbid":[],"why":"error_handling / 难度 2"}
+{"id":"Q61","prompt":"这个项目有哪些平级业务服务？","expect":["docs/reference/multi-app-service-architecture.md"],"expectRoutes":[],"forbid":[],"why":"architecture_understanding / 难度 2"}
+{"id":"Q62","prompt":"项目的部署拓扑是怎样的？","expect":["docs/reference/deployment-topology.md"],"expectRoutes":[],"forbid":[],"why":"architecture_understanding / 难度 3"}
+{"id":"Q63","prompt":"看板有哪几个数据源？","expect":[".trellis/spec/flyer-Cloud/backend/quality-guidelines.md"],"expectRoutes":[],"forbid":[],"why":"architecture_understanding / 难度 3"}
+{"id":"Q64","prompt":"项目里 App 和数据边界是怎么划分的？","expect":["docs/reference/multi-app-service-architecture.md"],"expectRoutes":[],"forbid":[],"why":"architecture_understanding / 难度 2"}
+{"id":"Q65","prompt":"看板快照的版本演进是怎样的？","expect":[".trellis/spec/flyer-Cloud/backend/quality-guidelines.md"],"expectRoutes":[],"forbid":[],"why":"architecture_understanding / 难度 3"}
+{"id":"Q66","prompt":"前端接入需要遵守什么契约？","expect":["docs/reference/multi-app-service-architecture.md"],"expectRoutes":[],"forbid":[],"why":"architecture_understanding / 难度 2"}
+{"id":"Q67","prompt":"表盘市场的内容体系是怎么组织的？","expect":["docs/reference/watchface-content.md"],"expectRoutes":[],"forbid":[],"why":"architecture_understanding / 难度 3"}
+{"id":"Q68","prompt":"看板的认证与订单数据是从哪里取的？","expect":[".trellis/spec/flyer-Cloud/backend/quality-guidelines.md"],"expectRoutes":[],"forbid":[],"why":"architecture_understanding / 难度 3"}
+{"id":"Q69","prompt":"整个项目的知识文档是怎么组织的？","expect":["docs/README.md"],"expectRoutes":[],"forbid":[],"why":"architecture_understanding / 难度 2"}
+{"id":"Q70","prompt":"多应用首页看板这个任务的目标是什么？","expect":[".trellis/tasks/08-31-multi-app-dashboard/prd.md"],"expectRoutes":[],"forbid":[],"why":"architecture_understanding / 难度 3"}
+{"id":"Q71","prompt":"web-admin 的部署流程文档在哪？","expect":["docs/runbooks/web-admin-deploy.md"],"expectRoutes":[],"forbid":[],"why":"cross_language / 难度 2"}
+{"id":"Q72","prompt":"consumer 的鉴权和订单接口怎么调用？","expect":["docs/reference/consumer-auth-orders.md"],"expectRoutes":[],"forbid":[],"why":"cross_language / 难度 3"}
+{"id":"Q73","prompt":"deployment topology 的中文说明在哪？","expect":["docs/reference/deployment-topology.md"],"expectRoutes":[],"forbid":[],"why":"cross_language / 难度 3"}
+{"id":"Q74","prompt":"resource center 是做什么的？","expect":["docs/reference/resource-center.md"],"expectRoutes":[],"forbid":[],"why":"cross_language / 难度 2"}
+{"id":"Q75","prompt":"watchtracker attribution 的实现说明在哪？","expect":["docs/reference/watchtracker-attribution.md"],"expectRoutes":[],"forbid":[],"why":"cross_language / 难度 3"}
+{"id":"Q76","prompt":"platform account contract 写在哪里？","expect":[".trellis/spec/flyer-Cloud/backend/platform-account-contract.md"],"expectRoutes":[],"forbid":[],"why":"cross_language / 难度 3"}
+{"id":"Q77","prompt":"watchface upload 的接口文档在哪？","expect":["docs/reference/watchface-upload.md"],"expectRoutes":[],"forbid":[],"why":"cross_language / 难度 3"}
+{"id":"Q78","prompt":"bamai 的 iOS 接口指南在哪？","expect":["docs/reference/bamai-ios-api-guide.md"],"expectRoutes":[],"forbid":[],"why":"cross_language / 难度 2"}
+{"id":"Q79","prompt":"timezone convention 的决策记录在哪？","expect":["docs/adr/0002-project-timezone-convention.md"],"expectRoutes":[],"forbid":[],"why":"cross_language / 难度 3"}
+{"id":"Q80","prompt":"flyercloud service release 的步骤在哪？","expect":["docs/runbooks/flyercloud-service-release.md"],"expectRoutes":[],"forbid":[],"why":"cross_language / 难度 3"}
+{"id":"Q81","prompt":"watchface_dashboard_daily_snapshot 表在哪里定义？","expect":[".trellis/spec/flyer-Cloud/backend/quality-guidelines.md"],"expectRoutes":[],"forbid":[],"why":"symbol_location / 难度 3"}
+{"id":"Q82","prompt":"active_subject_version 字段是做什么的？","expect":[".trellis/spec/flyer-Cloud/backend/quality-guidelines.md"],"expectRoutes":[],"forbid":[],"why":"symbol_location / 难度 3"}
+{"id":"Q83","prompt":"RemoteConsumerAuthService 有哪些方法？","expect":[".trellis/spec/flyer-Cloud/backend/quality-guidelines.md"],"expectRoutes":[],"forbid":[],"why":"symbol_location / 难度 3"}
+{"id":"Q84","prompt":"storeArea 请求头是什么含义？","expect":[".trellis/spec/flyer-Cloud/backend/quality-guidelines.md"],"expectRoutes":[],"forbid":[],"why":"symbol_location / 难度 3"}
+{"id":"Q85","prompt":"registration_store_area 什么时候写入？","expect":[".trellis/spec/flyer-Cloud/backend/quality-guidelines.md"],"expectRoutes":[],"forbid":[],"why":"symbol_location / 难度 3"}
+{"id":"Q86","prompt":"icon_type 的取值有哪些？","expect":[".trellis/spec/flyer-Cloud/backend/watchface-admin-content-contract.md"],"expectRoutes":[],"forbid":[],"why":"symbol_location / 难度 2"}
+{"id":"Q87","prompt":"tabVisits 包含哪几个字段？","expect":[".trellis/spec/flyer-Cloud/backend/quality-guidelines.md"],"expectRoutes":[],"forbid":[],"why":"symbol_location / 难度 3"}
+{"id":"Q88","prompt":"payment_status 的取值有哪些？","expect":[".trellis/spec/flyer-Cloud/backend/quality-guidelines.md"],"expectRoutes":[],"forbid":[],"why":"symbol_location / 难度 3"}
+{"id":"Q89","prompt":"appId 是怎么定义的？","expect":["docs/reference/multi-app-service-architecture.md"],"expectRoutes":[],"forbid":[],"why":"symbol_location / 难度 2"}
+{"id":"Q90","prompt":"WatchfaceMarketRegion 枚举有哪些值？","expect":[".trellis/spec/flyer-Cloud/backend/quality-guidelines.md"],"expectRoutes":[],"forbid":[],"why":"symbol_location / 难度 3"}
+{"id":"Q91","prompt":"看板一天的数据是怎么构建出来的？","expect":[".trellis/spec/flyer-Cloud/backend/quality-guidelines.md"],"expectRoutes":[],"forbid":[],"why":"call_chain / 难度 3"}
+{"id":"Q92","prompt":"newUsers 数据是怎么从 auth 拿到的？","expect":[".trellis/spec/flyer-Cloud/backend/quality-guidelines.md"],"expectRoutes":[],"forbid":[],"why":"call_chain / 难度 3"}
+{"id":"Q93","prompt":"看板的支付数据是怎么转换的？","expect":[".trellis/spec/flyer-Cloud/backend/quality-guidelines.md"],"expectRoutes":[],"forbid":[],"why":"call_chain / 难度 3"}
+{"id":"Q94","prompt":"表盘市场 App 从注册到登录的完整链路是什么？","expect":["docs/reference/multi-app-service-architecture.md"],"expectRoutes":[],"forbid":[],"why":"call_chain / 难度 3"}
+{"id":"Q95","prompt":"发布一个后端服务的完整流程是什么？","expect":["docs/runbooks/flyercloud-service-release.md"],"expectRoutes":[],"forbid":[],"why":"call_chain / 难度 2"}
+{"id":"Q96","prompt":"看板快照的区间查询是怎么做的？","expect":[".trellis/spec/flyer-Cloud/backend/quality-guidelines.md"],"expectRoutes":[],"forbid":[],"why":"call_chain / 难度 3"}
+{"id":"Q97","prompt":"表盘内容改动后怎么同步到各端？","expect":[".trellis/spec/flyer-Cloud/backend/watchface-admin-content-contract.md"],"expectRoutes":[],"forbid":[],"why":"call_chain / 难度 3"}
+{"id":"Q98","prompt":"把脉的 dashboard 契约里指标从哪来？","expect":[".trellis/spec/flyer-Cloud/backend/bamai-dashboard-contract.md"],"expectRoutes":[],"forbid":[],"why":"call_chain / 难度 3"}
+{"id":"Q99","prompt":"平台账号的会话是怎么建立和存储的？","expect":[".trellis/spec/flyer-Cloud/backend/platform-account-contract.md"],"expectRoutes":[],"forbid":[],"why":"call_chain / 难度 3"}
+{"id":"Q100","prompt":"表盘的 iOS 首页数据是怎么刷新缓存的？","expect":[".trellis/spec/flyer-Cloud/backend/watchface-ios-home-cache-refresh-contract.md"],"expectRoutes":[],"forbid":[],"why":"call_chain / 难度 3"}

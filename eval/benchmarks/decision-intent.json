@@ -1,0 +1,34 @@
+{
+  "description": "Small deterministic decision-level acceptance corpus. Legacy-compatible blocks deliberately omit topic so before/after compares intent selection rather than schema support.",
+  "owners": {
+    "docs/storage.md": [
+      { "id": "remote", "title": "远程索引存储 Remote storage", "status": "rejected", "claim": "索引存储依赖远程数据库。", "reason": "离线场景无法查找，因此拒绝远程索引。", "evidence": "离线运行是已确认要求。" },
+      { "id": "local-v1", "title": "旧版索引存储 v1", "status": "superseded", "claim": "索引存储使用本地 v1 格式。", "reason": "最初格式支持本地查找。", "evidence": "v1 检索契约记录。", "supersededBy": "local-v2" },
+      { "id": "local-v2", "title": "当前索引存储 v2 Local storage", "status": "accepted", "claim": "索引存储使用本地 v2 格式。", "reason": "新格式保留词权重并支持离线查找。", "evidence": "冷缓存与热缓存检索测试通过。" }
+    ],
+    "docs/tokens.md": [
+      { "id": "token-24h", "title": "旧登录令牌有效期 24 小时", "status": "superseded", "claim": "登录令牌有效期为 24 小时。", "reason": "减少重复登录。", "evidence": "历史认证契约。", "supersededBy": "token-30m" },
+      { "id": "token-30m", "title": "当前登录令牌有效期 30 分钟", "status": "accepted", "claim": "登录令牌有效期为 30 分钟。", "reason": "缩短失窃令牌的暴露窗口。", "evidence": "认证契约及有效期回归测试。" }
+    ],
+    "docs/compiler.md": [
+      { "id": "gpu", "title": "GPU 编译器", "status": "proposed", "claim": "考虑 GPU 编译器。", "reason": "加速大规模构建，仍需验证成本。" }
+    ],
+    "docs/compression.md": [
+      { "id": "compress", "title": "有损压缩策略", "status": "rejected", "claim": "对契约文件使用有损压缩。", "reason": "丢失精确字段定义，因此拒绝。", "evidence": "精确读取要求。" }
+    ]
+  },
+  "queries": [
+    { "id": "D01", "prompt": "索引存储", "intent": "current", "expected": "local-v2" },
+    { "id": "D02", "prompt": "为什么拒绝远程索引", "intent": "history", "expected": "remote" },
+    { "id": "D03", "prompt": "旧版索引存储 v1", "intent": "history", "expected": "local-v1" },
+    { "id": "D04", "prompt": "旧版索引存储 v1 现在使用什么", "intent": "current", "expected": "local-v2" },
+    { "id": "D05", "prompt": "登录令牌有效期", "intent": "current", "expected": "token-30m" },
+    { "id": "D06", "prompt": "登录令牌 24 小时", "intent": "history", "expected": "token-24h" },
+    { "id": "D07", "prompt": "登录令牌 24 小时现在是否仍然生效", "intent": "current", "expected": "token-30m" },
+    { "id": "D08", "prompt": "GPU 编译器", "intent": "current", "expected": null },
+    { "id": "D09", "prompt": "有损压缩策略", "intent": "current", "expected": null },
+    { "id": "D10", "prompt": "有损压缩策略为何被拒绝", "intent": "history", "expected": "compress" },
+    { "id": "D11", "prompt": "量子纠缠协议", "intent": "current", "expected": null },
+    { "id": "D12", "prompt": "remote storage", "intent": "current", "expected": "local-v2" }
+  ]
+}

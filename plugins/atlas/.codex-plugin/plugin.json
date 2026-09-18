@@ -1,27 +1,30 @@
 {
   "name": "atlas",
-  "version": "0.3.1",
-  "description": "Route Codex to the smallest relevant project knowledge set and reconcile durable findings.",
+  "version": "0.6.0",
+  "description": "Route to the smallest relevant project knowledge set, record durable findings, and bootstrap Atlas plus Trellis.",
   "author": {
-    "name": "Atlas Context Router contributors"
+    "name": "Atlas contributors"
   },
   "skills": "./skills/",
   "interface": {
     "displayName": "Atlas",
     "shortDescription": "Incremental project knowledge routing for Codex.",
     "longDescription": "Atlas indexes maintained knowledge incrementally, injects only relevant paths and sections, and keeps Trellis task artifacts below canonical sources.",
-    "developerName": "Atlas Context Router contributors",
+    "developerName": "Atlas contributors",
     "category": "Productivity",
     "capabilities": [
       "Project knowledge routing",
       "Incremental knowledge indexing",
-      "Trellis-aware source precedence"
+      "Semantic and lexical hybrid retrieval",
+      "Coverage verdict for unanswerable questions",
+      "Trellis-aware source precedence",
+      "Trellis and Atlas bootstrap from a conversation"
     ],
     "defaultPrompt": "Use $atlas to route to the smallest relevant canonical knowledge set before work and reconcile durable findings afterward."
   },
   "license": "MIT",
-  "homepage": "https://github.com/aiua-dev/atlas-context-router",
-  "repository": "https://github.com/aiua-dev/atlas-context-router.git",
+  "homepage": "https://github.com/aiua-dev/atlas",
+  "repository": "https://github.com/aiua-dev/atlas.git",
   "keywords": [
     "knowledge-routing",
     "context",

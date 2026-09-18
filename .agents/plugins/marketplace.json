@@ -1,7 +1,7 @@
 {
-  "name": "atlas-router",
+  "name": "atlas",
   "interface": {
-    "displayName": "Atlas Context Router"
+    "displayName": "Atlas"
   },
   "plugins": [
     {

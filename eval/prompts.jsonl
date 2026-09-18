@@ -1,0 +1,6 @@
+{"id":"explicit-consumer-test","prompt":"帮我测试 consumer 接口","expect":["docs/reference/consumer-auth-orders.md","docs/reference/deployment-topology.md","docs/openapi.yaml"],"expectRoutes":["consumer-api-test"],"forbid":[],"why":"显式 route 必须命中,且三个文件按 read 顺序全部给出"}
+{"id":"token-lookup","prompt":"consumer 的临时 token 怎么拿","expect":["docs/reference/consumer-auth-orders.md"],"expectRoutes":[],"forbid":[".trellis/tasks/archive/old/prd.md"],"why":"测试 token 的维护位置是 canonical doc,不是任何 Trellis 工件"}
+{"id":"deployment-topology","prompt":"测试环境部署在哪台机器","expect":["docs/reference/deployment-topology.md"],"expectRoutes":[],"forbid":[],"why":"环境与服务位置只由 topology 真源维护"}
+{"id":"archive-never-current","prompt":"consumer endpoint 的历史假设是什么","expect":[],"expectRoutes":[],"forbid":[".trellis/tasks/archive/old/prd.md"],"why":"归档工件是历史证据,永不作为当前事实被路由"}
+{"id":"openapi-session-contract","prompt":"consumer session 接口怎么建","expect":["docs/openapi.yaml"],"expectRoutes":[],"forbid":[],"why":"接口契约的真源是机器契约文件,不是 spec 散文"}
+{"id":"spec-not-contract","prompt":"auth 端点的契约是什么","expect":["docs/reference/consumer-auth-orders.md"],"expectRoutes":[],"forbid":[],"why":"spec 自称不是当前端点契约,真源必须是 docs"}

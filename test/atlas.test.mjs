@@ -18,17 +18,17 @@ import {
 
 const repository = path.resolve(import.meta.dirname, "..");
 const fixture = path.join(import.meta.dirname, "fixtures", "project");
-const cli = path.join(repository, "plugins", "atlas", "bin", "atlas-router.mjs");
+const cli = path.join(repository, "plugins", "atlas", "bin", "atlas.mjs");
 
 function projectCopy() {
-  const root = fs.mkdtempSync(path.join(os.tmpdir(), "atlas-router-test-"));
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "atlas-test-"));
   fs.cpSync(fixture, root, { recursive: true });
   return root;
 }
 
 function withCache(callback) {
   const old = process.env.ATLAS_CACHE_DIR;
-  process.env.ATLAS_CACHE_DIR = fs.mkdtempSync(path.join(os.tmpdir(), "atlas-router-cache-"));
+  process.env.ATLAS_CACHE_DIR = fs.mkdtempSync(path.join(os.tmpdir(), "atlas-cache-"));
   try {
     return callback();
   } finally {
@@ -65,8 +65,12 @@ test("explicit intent route returns canonical auth, topology, and OpenAPI in ord
   assert.equal(context.results[2].heading, "");
   const formatted = formatContext(context, { hook: true });
   assert.match(formatted, /Atlas hook 已在模型开始工作前完成路由/);
-  assert.match(formatted, /第一项仓库内容操作/);
-  assert.match(formatted, /不要先运行 git status、find、全项目 rg 或源码扫描/);
+  // 契约:检索只做字面匹配,所以必须说明这条限制并允许一次聚焦搜索,
+  // 而不是像旧版那样禁止 rg/find —— 词法层无法判断自己是否因为措辞不同而整体偏了。
+  // 提示必须声明检索的能力边界，避免模型把候选当作确定答案。
+  assert.match(formatted, /融合了人工配置的显式路由、语义相似度与词面匹配/);
+  assert.match(formatted, /明显不符/);
+  assert.match(formatted, /聚焦搜索/);
   assert.match(formatted, /不要探测插件缓存或 Atlas skill 的版本路径/);
   assert.match(formatted, /Trellis 适配/);
 }));
@@ -210,7 +214,7 @@ test("session graph migrates v1 state and persists neither raw prompt nor raw se
 }));
 
 test("hook is silent without opt-in and emits valid bounded context with config", () => withCache(() => {
-  const noConfig = fs.mkdtempSync(path.join(os.tmpdir(), "atlas-router-empty-"));
+  const noConfig = fs.mkdtempSync(path.join(os.tmpdir(), "atlas-empty-"));
   const silent = spawnSync(process.execPath, [cli, "hook"], {
     input: JSON.stringify({ cwd: noConfig, prompt: "consumer api" }),
     encoding: "utf8",
@@ -230,7 +234,7 @@ test("hook is silent without opt-in and emits valid bounded context with config"
   const payload = JSON.parse(routed.stdout);
   assert.equal(payload.hookSpecificOutput.hookEventName, "UserPromptSubmit");
   assert.match(payload.hookSpecificOutput.additionalContext, /consumer-auth-orders\.md/);
-  assert.match(payload.hookSpecificOutput.additionalContext, /不要遍历源码/);
+  assert.match(payload.hookSpecificOutput.additionalContext, /融合了人工配置的显式路由、语义相似度与词面匹配/);
   assert.ok(payload.hookSpecificOutput.additionalContext.length < 4000);
 
   const followUp = spawnSync(process.execPath, [cli, "hook"], {
@@ -264,8 +268,8 @@ test("npm-bundled install command registers the bundled Codex plugin", () => {
   fs.writeFileSync(fakeCodex, `#!/bin/sh
 printf '%s\\n' "$*" >> "$ATLAS_TEST_LOG"
 case "$*" in
-  "plugin list") printf '%s\\n' 'atlas@atlas-router  installed, enabled' ;;
-  "plugin marketplace list") printf '%s\\n' 'atlas-router  /old/source' ;;
+  "plugin list") printf '%s\\n' 'atlas@atlas  installed, enabled' ;;
+  "plugin marketplace list") printf '%s\\n' 'atlas  /old/source' ;;
   "--version") printf '%s\\n' 'codex-cli test' ;;
 esac
 `, { mode: 0o755 });
@@ -281,15 +285,15 @@ esac
   });
   assert.equal(installed.status, 0, installed.stderr);
   const result = JSON.parse(installed.stdout);
-  assert.equal(result.plugin, "atlas@atlas-router");
+  assert.equal(result.plugin, "atlas@atlas");
   assert.equal(result.packageRoot, repository);
   assert.equal(result.legacyDisabled, true);
   assert.equal(result.restartRequired, true);
 
   const calls = fs.readFileSync(log, "utf8");
-  assert.match(calls, /plugin remove atlas@atlas-router/);
-  assert.match(calls, /plugin marketplace remove atlas-router/);
+  assert.match(calls, /plugin remove atlas@atlas/);
+  assert.match(calls, /plugin marketplace remove atlas/);
   assert.match(calls, new RegExp(`plugin marketplace add ${repository.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}`));
-  assert.match(calls, /plugin add atlas@atlas-router/);
+  assert.match(calls, /plugin add atlas@atlas/);
   assert.match(fs.readFileSync(path.join(codexHome, "config.toml"), "utf8"), /enabled = false/);
 });

@@ -5,7 +5,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"$PLUGIN_ROOT/bin/atlas-router.mjs\" hook",
+            "command": "node \"$PLUGIN_ROOT/bin/atlas.mjs\" hook",
             "timeout": 5
           }
         ]
