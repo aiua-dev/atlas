@@ -1,5 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
+import { inspectTrellisPlatform } from "./trellis-platform.mjs";
 
 /**
  * Atlas 与 Trellis 的自举。
@@ -82,35 +83,62 @@ export function ensureAtlas(root, { initProject, trellis = null } = {}) {
 /**
  * 初始化 Trellis。
  *
- * 交给官方 CLI，参数缺一个都会卡在交互提示，因此三个都给全。
- * 开发者名字取 git 配置，取不到时用一个中性默认值。
+ * 新项目初始化开发者；已有项目只补目标平台，不更换身份或重建任务。
+ * 官方 CLI 负责写入模板，Atlas 负责检查 Codex 的核心入口是否齐全。
  */
 export function ensureTrellis(root, { runCommand, platform = "codex", user = null } = {}) {
   const resolved = path.resolve(root);
   if (!looksLikeProjectRoot(resolved)) {
     return { created: false, skipped: true, reason: "该目录不像项目根，未自动初始化 Trellis。" };
   }
-  // 已存在时明确标记 present，避免调用方把「已存在」误报成「未初始化」。
-  if (hasTrellis(resolved)) return { created: false, present: true };
+  if (!/^[a-z][a-z0-9-]*$/.test(platform)) throw new Error("无效的 Trellis 平台参数。");
+  const present = hasTrellis(resolved);
+  const before = inspectTrellisPlatform(resolved, platform);
+  if (present && before?.ready) return { created: false, present: true, ok: true, platform: before };
 
   if (typeof runCommand !== "function") {
-    return { created: false, skipped: true, reason: "未提供命令执行能力" };
+    return { created: false, present, ok: false, skipped: true, platform: before, reason: "未提供命令执行能力" };
+  }
+
+  // Platform templates and project scripts evolve together. Do not silently
+  // introduce newer Codex execution policy into an older project. No npm calls
+  // here: installing/selecting a different CLI stays an explicit agent operation.
+  const versionFile = path.join(resolved, TRELLIS_DIR, ".version");
+  if (present && before && fs.existsSync(versionFile)) {
+    const projectVersion = fs.readFileSync(versionFile, "utf8").trim();
+    const version = runCommand("trellis", ["--version"], resolved);
+    const cliVersion = String(version?.stdout ?? "").match(/^\d+\.\d+\.\d+(?:-[\w.-]+)?$/m)?.[0];
+    if (version?.status !== 0 || !cliVersion || projectVersion !== cliVersion) {
+      return { created: false, present, ok: false, platform: before, reason: "trellis-version-mismatch",
+        projectVersion, cliVersion: cliVersion ?? null,
+        stderr: `项目 Trellis ${projectVersion || "版本未知"} 与本机 CLI ${cliVersion || "版本不可读"} 不一致；请用项目同版本 CLI 执行 trellis init --codex -y 补装，或先审阅升级。未写入平台文件。` };
+    }
   }
 
   let name = user;
-  if (!name) {
+  if (!present && !name) {
     const gitUser = runCommand("git", ["config", "user.name"], resolved);
     name = (gitUser?.stdout ?? "").trim() || "developer";
   }
 
-  const result = runCommand("trellis", ["init", `--${platform}`, "-y", "-u", name], resolved);
-  const ok = result?.status === 0;
-  let stderr = result?.stderr ?? "";
-  // 命令不存在时 stderr 为空但 status 非 0，给出可操作的提示。
-  if (!ok && !stderr.trim()) stderr = "trellis 命令未找到，请先 npm install -g @mindfoldhq/trellis";
+  // -y already preserves existing files. --skip-existing forces Trellis's
+  // full-init path and can change project metadata; omit it when adding a platform.
+  const args = ["init", `--${platform}`, "-y"];
+  if (!present) args.push("-u", name);
+  const result = runCommand("trellis", args, resolved);
+  const after = inspectTrellisPlatform(resolved, platform);
+  const ok = result?.status === 0 && hasTrellis(resolved) && (!after || after.ready);
+  let stderr = result?.stderr?.trim() || result?.error?.message || "";
+  if (!ok && !stderr) stderr = result?.status === 0
+    ? "Trellis CLI 已返回，但初始化或平台接入不完整。"
+    : "Trellis CLI 执行失败；请确认已安装 @mindfoldhq/trellis。";
+  if (after && !after.ready) stderr += `${stderr ? "\n" : ""}Codex 接入未完成：${[...after.missing, ...after.issues].join("；")}。已有登记可能使 init 跳过；先用 trellis update --dry-run 检查，不要强制覆盖。`;
 
   return {
-    created: fs.existsSync(path.join(resolved, TRELLIS_DIR)),
+    created: !present && hasTrellis(resolved),
+    present,
+    platformAdded: present && ok,
+    platform: after,
     ok,
     user: name,
     stderr: stderr.trim()

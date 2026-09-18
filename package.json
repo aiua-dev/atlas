@@ -1,6 +1,6 @@
 {
   "name": "@aiua/atlas",
-  "version": "0.6.0",
+  "version": "0.6.1",
   "description": "Incremental project knowledge routing for Codex, with Trellis-aware source precedence.",
   "homepage": "https://github.com/aiua-dev/atlas#readme",
   "repository": {

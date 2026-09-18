@@ -45,6 +45,15 @@ syncs the integration, and builds the index in both text and JSON modes. Existin
 configuration is preserved. `atlas sync .` also refreshes an existing Atlas index;
 `--dry-run` changes neither files nor cache.
 
+An existing `.trellis/` does not establish Codex readiness. `bootstrap --platform
+codex` checks the core project skills and workflow hook, delegates missing setup
+to `trellis init --codex -y`, then checks the result. It does not reset the developer
+or task. If the project and CLI versions differ, select the matching official CLI
+before adding the platform, or review a full upgrade separately. This avoids
+silently mixing execution policies across template versions. `atlas doctor .
+--platform codex` checks these local entry points; it does not prove runtime skill
+loading or hook trust.
+
 Commit the generated `.atlas/config.json`. The index and session route graph
 remain in the user's cache and do not enter the repository. Generated
 `.atlas/.gitignore` excludes `.env.local` credentials.

@@ -42,6 +42,14 @@ atlas init . --trellis     # 只建 Atlas
 atlas sync .               # 修正知识层 + 装适配器 + 注册钩子
 ```
 
+已有 `.trellis/` 不代表已接入 Codex。`bootstrap --platform codex` 会检查项目内
+`.agents/skills/trellis-*` 的核心技能及 `.codex/` 的工作流 hook；缺失时交给
+`trellis init --codex -y` 补装，再复查结果，不重新设置开发者或任务。
+若项目与 CLI 版本不同，会先报出版本差异，避免混入不同执行模式的模板。
+需要补平台时使用与项目 `.trellis/.version` 一致的官方 CLI；完整升级应单独审阅。
+用 `atlas doctor . --platform codex` 可检查这些本地入口。检查通过不代表 Codex
+已经加载技能或信任 hook；仍需在 Codex 中确认。
+
 `atlas sync` 一步完成四件事，幂等可重复执行：修正 Trellis 模板写入的英文强制规定、
 安装无任务静默适配器、注册注入钩子（Claude 写 `.claude/settings.json`，Codex 追加到
 `.codex/hooks.json`）、输出 spec 的事实/约束体检报告。已有 Atlas 配置时也会刷新索引。

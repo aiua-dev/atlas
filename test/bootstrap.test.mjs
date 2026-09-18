@@ -8,7 +8,7 @@ import { bootstrapProject, ensureTrellis } from "../plugins/atlas/lib/bootstrap.
 
 const CLI = path.resolve(import.meta.dirname, "../plugins/atlas/bin/atlas.mjs");
 
-function setup(t, { marker = true, failTrellis = false } = {}) {
+function setup(t, { marker = true, failTrellis = false, skipCodex = false, trellisVersion = "0.6.5" } = {}) {
   const base = fs.mkdtempSync(path.join(os.tmpdir(), "atlas-bootstrap-"));
   const root = path.join(base, "project"), bin = path.join(base, "bin");
   fs.mkdirSync(root);
@@ -17,11 +17,24 @@ function setup(t, { marker = true, failTrellis = false } = {}) {
   const calls = path.join(base, "trellis-calls");
   fs.writeFileSync(path.join(bin, "trellis"), `#!${process.execPath}
 const fs = require('node:fs');
+const path = require('node:path');
 fs.appendFileSync(${JSON.stringify(calls)}, JSON.stringify(process.argv.slice(2)) + '\\n');
+if (process.argv.includes('--version')) { process.stdout.write(${JSON.stringify(trellisVersion)} + '\\n'); process.exit(0); }
 if (${failTrellis}) { process.stderr.write('fixture init failure'); process.exit(1); }
 fs.mkdirSync('.trellis/spec/backend', { recursive: true });
-fs.mkdirSync('.codex', { recursive: true });
-fs.writeFileSync('.trellis/spec/backend/index.md', '# Backend\\n\\n**Language**: All documentation should be written in **English**.\\n');
+function missing(file, content) {
+  fs.mkdirSync(path.dirname(file), { recursive: true });
+  if (!fs.existsSync(file)) fs.writeFileSync(file, content);
+}
+missing('.trellis/spec/backend/index.md', '# Backend\\n\\n**Language**: All documentation should be written in **English**.\\n');
+if (!${skipCodex} && process.argv.includes('--codex')) {
+  for (const name of ['start', 'brainstorm', 'before-dev', 'check', 'update-spec', 'finish-work']) {
+    missing('.agents/skills/trellis-' + name + '/SKILL.md', '---\\nname: trellis-' + name + '\\ndescription: Fixture workflow skill.\\n---\\n');
+  }
+  missing('.codex/config.toml', '# Existing platform config\\n');
+  missing('.codex/hooks/inject-workflow-state.py', '# Fixture workflow hook\\n');
+  missing('.codex/hooks.json', JSON.stringify({ hooks: { UserPromptSubmit: [{ hooks: [{ type: 'command', command: 'python3 -X utf8 .codex/hooks/inject-workflow-state.py' }] }] } }));
+}
 `, { mode: 0o755 });
   const env = { ...process.env, PATH: `${bin}${path.delimiter}${process.env.PATH}`,
     ATLAS_CACHE_DIR: path.join(base, "cache"), ATLAS_HOME: path.join(base, "atlas-home"), ATLAS_EMBED_ENABLED: "0" };
@@ -139,4 +152,115 @@ test("生成凭据排除规则时保留已有 gitignore 内容", (t) => {
   const ignore = fs.readFileSync(path.join(root, ".atlas/.gitignore"), "utf8");
   assert.match(ignore, /^custom-cache\/\n/m);
   assert.match(ignore, /^\.env\.local$/m);
+});
+
+test("已有 Trellis 和原生 Codex 目录仍补装技能，保留开发者、任务、规范与用户配置", (t) => {
+  const { root, json, calls } = setup(t);
+  const originals = {
+    ".trellis/.developer": "original-developer\n",
+    ".trellis/tasks/active/task.json": '{"status":"in_progress"}\n',
+    ".trellis/workflow.md": "# Custom workflow\n",
+    ".trellis/spec/backend/index.md": "# Maintained constraints\n",
+    ".codex/config.toml": '# User-owned settings\nmodel = "custom-model"\n'
+  };
+  for (const [name, body] of Object.entries(originals)) {
+    fs.mkdirSync(path.dirname(path.join(root, name)), { recursive: true });
+    fs.writeFileSync(path.join(root, name), body);
+  }
+  const result = json("bootstrap", ".", "--platform", "codex", "--user", "should-not-replace");
+  const step = result.steps.find((step) => step.name === "trellis");
+  assert.equal(step.created, false);
+  assert.equal(step.present, true);
+  assert.equal(step.platformAdded, true);
+  assert.equal(step.platform.ready, true);
+  assert.deepEqual(JSON.parse(fs.readFileSync(calls, "utf8").trim()), ["init", "--codex", "-y"]);
+  for (const [name, body] of Object.entries(originals)) assert.equal(fs.readFileSync(path.join(root, name), "utf8"), body);
+  assert.equal(json("doctor", ".", "--platform", "codex").trellisPlatform.ready, true);
+  json("bootstrap", ".", "--platform", "codex");
+  assert.equal(fs.readFileSync(calls, "utf8").trim().split("\n").length, 1);
+});
+
+for (const asJson of [false, true]) test(`CLI 返回成功但缺少 Codex 入口时 ${asJson ? "JSON" : "文本"} 模式报错且不 sync`, (t) => {
+  const { root, run } = setup(t, { skipCodex: true });
+  fs.mkdirSync(path.join(root, ".trellis"));
+  fs.mkdirSync(path.join(root, ".codex"));
+  const result = run(["bootstrap", ".", ...(asJson ? ["--json"] : [])]);
+  assert.equal(result.status, 1);
+  if (asJson) {
+    const data = JSON.parse(result.stdout);
+    assert.equal(data.steps[0].ok, false);
+    assert.equal(data.steps[0].platform.ready, false);
+    assert.ok(data.steps[0].platform.missing.includes(".agents/skills/trellis-brainstorm/SKILL.md"));
+    assert.equal(data.sync, undefined);
+  } else assert.match(result.stdout, /接入未完成/);
+  assert.equal(fs.existsSync(path.join(root, ".codex/hooks.json")), false);
+  assert.equal(fs.existsSync(path.join(root, ".atlas/hooks")), false);
+  const doctor = run(["doctor", ".", "--platform", "codex", "--json"]);
+  assert.equal(doctor.status, 1);
+  assert.equal(JSON.parse(doctor.stdout).trellisPlatform.ready, false);
+});
+
+test("无关或无效 hooks 配置不冒充 Trellis 已接入，也不覆盖用户文件", (t) => {
+  const { root, json, run } = setup(t);
+  json("bootstrap", ".");
+  const hookPath = path.join(root, ".codex/hooks.json");
+  for (const content of ["{invalid", JSON.stringify({ hooks: { UserPromptSubmit: [{ hooks: [{ type: "command", command: "atlas hook" }] }] } })]) {
+    fs.writeFileSync(hookPath, content);
+    const result = run(["bootstrap", ".", "--json"]);
+    assert.equal(result.status, 1);
+    const probe = JSON.parse(result.stdout).steps[0].platform;
+    assert.equal(probe.ready, false);
+    assert.equal(probe.issues.length, 1);
+    assert.equal(fs.readFileSync(hookPath, "utf8"), content);
+  }
+});
+
+test("已存在的 Atlas Trellis 代理仍可作为工作流 hook，检查不触发重装", (t) => {
+  const { root, json, calls } = setup(t);
+  json("bootstrap", ".");
+  fs.writeFileSync(path.join(root, ".codex/hooks.json"), JSON.stringify({ hooks: {
+    UserPromptSubmit: [{ hooks: [{ type: "command", command: 'python3 -X utf8 "./.atlas/hooks/trellis-active-only.py"' }] }]
+  } }));
+  const before = fs.readFileSync(calls, "utf8");
+  assert.equal(json("doctor", ".", "--platform", "codex").trellisPlatform.ready, true);
+  json("bootstrap", ".");
+  assert.equal(fs.readFileSync(calls, "utf8"), before);
+});
+
+test("补装前拦截跨版本模板，CLI 与项目同版本时才添加 Codex 平台", (t) => {
+  const { root, run, calls } = setup(t, { trellisVersion: "0.6.17" });
+  fs.mkdirSync(path.join(root, ".trellis"));
+  const versionFile = path.join(root, ".trellis/.version");
+  fs.writeFileSync(versionFile, "0.6.5\n");
+  const result = run(["bootstrap", ".", "--json"]);
+  assert.equal(result.status, 1);
+  const data = JSON.parse(result.stdout);
+  assert.equal(data.steps[0].reason, "trellis-version-mismatch");
+  assert.equal(data.steps[0].projectVersion, "0.6.5");
+  assert.equal(data.steps[0].cliVersion, "0.6.17");
+  assert.equal(data.sync, undefined);
+  assert.equal(fs.existsSync(path.join(root, ".agents")), false);
+  assert.equal(fs.readFileSync(versionFile, "utf8"), "0.6.5\n");
+  assert.deepEqual(JSON.parse(fs.readFileSync(calls, "utf8").trim()), ["--version"]);
+  fs.writeFileSync(versionFile, "0.6.17\n");
+  const repaired = run(["bootstrap", ".", "--json"]);
+  assert.equal(repaired.status, 0, repaired.stderr);
+  assert.equal(JSON.parse(repaired.stdout).steps[0].platform.ready, true);
+});
+
+test("已登记平台丢失技能且官方 init 跳过时返回具体缺项", (t) => {
+  const { root, json } = setup(t);
+  json("bootstrap", ".");
+  const missing = ".agents/skills/trellis-brainstorm/SKILL.md";
+  fs.unlinkSync(path.join(root, missing));
+  const invocations = [];
+  const result = ensureTrellis(root, { runCommand(command, args) {
+    invocations.push({ command, args });
+    return { status: 0, stdout: "Already configured, skipping", stderr: "" };
+  } });
+  assert.equal(result.ok, false);
+  assert.equal(result.created, false);
+  assert.deepEqual(result.platform.missing, [missing]);
+  assert.match(result.stderr, /trellis update --dry-run/);
+  assert.deepEqual(invocations, [{ command: "trellis", args: ["init", "--codex", "-y"] }]);
 });

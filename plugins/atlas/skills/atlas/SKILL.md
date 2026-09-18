@@ -116,6 +116,13 @@ hooks do not initialize projects; structured decisions require existing setup.
 Automatic setup requires a project marker and refuses the home or filesystem
 root. In an empty directory, confirm the intended project before explicit init.
 Bootstrap text and JSON modes both sync and index; existing configuration is kept.
+For Codex, `.trellis/` alone is insufficient. Bootstrap checks the core skills and
+workflow hook, adds a missing platform through the official CLI, and verifies the
+result. Existing project identity and tasks are kept. If the project and CLI
+versions differ, select the matching official CLI for platform setup or review a
+separate upgrade; do not silently mix template policies. Use `atlas doctor .
+--platform codex` for local entry-point checks. Neither command approves hooks or
+proves that the current Codex session has loaded the skills.
 No command guarantees that an agent records every finding: carry out the verified
 reconciliation step yourself, or report `no durable update`.
 

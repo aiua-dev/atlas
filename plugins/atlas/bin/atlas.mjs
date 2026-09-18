@@ -29,6 +29,7 @@ import {
 import { syncTrellis, formatSyncReport } from "../lib/sync.mjs";
 import { recordClaim, formatRecordResult } from "../lib/record.mjs";
 import { recordDecision } from "../lib/decisions.mjs";
+import { inspectTrellisPlatform } from "../lib/trellis-platform.mjs";
 
 function usage(exitCode = 0) {
   const stream = exitCode === 0 ? process.stdout : process.stderr;
@@ -52,7 +53,7 @@ Usage:
   atlas context [--root ROOT] --prompt TEXT [--json] [--refresh] [--lexical] [--intent all|current|history]
   atlas route [--root ROOT] --prompt TEXT [--json] [--refresh] [--intent all|current|history]
   atlas focus [--root ROOT] [--json]
-  atlas doctor [ROOT] [--json]
+  atlas doctor [ROOT] [--json] [--platform codex]
   atlas hook
 
 The prompt path reads the cached index; run 'atlas index' after maintained
@@ -181,7 +182,7 @@ async function main() {
       user: option("--user")
     });
     if (result.atlas) {
-      if (result.trellis) result.sync = syncTrellis(result.root);
+      if (result.trellis && !result.steps.some((step) => step.ok === false)) result.sync = syncTrellis(result.root);
       refreshIndex(result.root, result);
     }
     if (!result.atlas || !result.trellis || result.steps.some((step) => step.ok === false)) process.exitCode = 1;
@@ -192,8 +193,10 @@ async function main() {
     const lines = [`Atlas bootstrap → ${result.root}`];
     for (const step of result.steps) {
       if (step.name === "trellis") {
-        if (step.created) lines.push(`Trellis：已初始化（开发者 ${step.user}）`);
-        else if (step.present) lines.push("Trellis：已存在，保持不变");
+        if (step.ok === false) lines.push(`Trellis：接入未完成（${step.stderr || step.reason}）`);
+        else if (step.created) lines.push(`Trellis：已初始化（开发者 ${step.user}）`);
+        else if (step.platformAdded) lines.push(`Trellis：已补接 ${option("--platform") ?? "codex"} 平台，保留已有身份与任务`);
+        else if (step.present) lines.push("Trellis：已存在，Codex 核心入口齐全，保持不变");
         else lines.push(`Trellis：未初始化${step.stderr || step.reason ? `（${step.stderr || step.reason}）` : ""}`);
       } else {
         if (step.created) lines.push(`Atlas：已初始化（${step.configPath}）`);
@@ -349,7 +352,10 @@ async function main() {
 
   if (command === "doctor") {
     const root = resolveRoot(positional());
+    const platform = option("--platform");
+    if (platform && platform !== "codex") throw new Error("doctor --platform 目前只支持 codex。");
     const result = diagnose(root);
+    if (platform) result.trellisPlatform = inspectTrellisPlatform(root, platform);
     const claude = claudeHookStatus(root);
     const trellisState = readTrellisState(root);
     const trellisLine = !trellisState.present
@@ -365,12 +371,17 @@ async function main() {
         ...result.knowledgeIssues.map((issue) => `决策校验：${issue.path}:${issue.line} ${issue.message}`),
         `Trellis: ${result.trellis ? `detected; spec adapters=${result.trellisSpecSources}; archiveExcluded=${result.archiveExcluded}` : "not detected"}`,
         `Trellis 状态: ${trellisLine}`,
+        ...(result.trellisPlatform ? [
+          `Trellis Codex 核心入口: ${result.trellisPlatform.ready ? "齐全（加载与信任需在 Codex 确认）" : "不完整"}`,
+          ...result.trellisPlatform.missing.map((file) => `缺失：${file}`),
+          ...result.trellisPlatform.issues
+        ] : []),
         `Claude Code 钩子: ${claude.registered ? "已注册" : `未注册；运行 atlas install --claude ${root}`}`,
         `project hook: ${result.projectHook ?? "none"}`,
         result.hookContract
       ].join("\n") + "\n");
     }
-    if (result.knowledgeIssues.length) process.exitCode = 1;
+    if (result.knowledgeIssues.length || result.trellisPlatform?.ready === false) process.exitCode = 1;
     return;
   }
 

@@ -10,7 +10,7 @@ Trellis 提供流程骨架，Atlas 提供知识路由。Atlas 可以独立使用
 node --version
 
 # 2. 安装两个 CLI
-npm install -g @aiua/atlas@latest        # 本流程适用于 Atlas 0.6.0 及以上
+npm install -g @aiua/atlas@latest        # 本流程适用于 Atlas 0.6.1 及以上
 npm install -g @mindfoldhq/trellis@latest
 
 # 3. 配置嵌入凭据（Atlas 的语义检索需要；不配则自动退化为纯词法）
@@ -98,6 +98,31 @@ atlas bootstrap . --platform codex
 已有配置保持不变，重复执行不产生第二份。查询和 hook 不初始化项目，
 结构化决策要求已有配置和真源。自动初始化拒绝用户主目录、文件系统根及没有项目
 标记的目录；全新空目录先确认项目位置，再显式 `atlas init .`。
+
+### 已有 Trellis，但缺少 Codex 平台
+
+全局安装 Trellis CLI 不会自动给每个项目安装技能。`bootstrap --platform codex`
+检查 `.agents/skills/` 中 start、brainstorm、before-dev、check、update-spec、
+finish-work 六个核心技能，以及 `.codex/` 的配置、工作流脚本和 hook 注册。
+Atlas 自己的 `atlas hook` 不能替代 Trellis 工作流 hook；已安装的 Atlas Trellis
+静默适配器仍可使用。检查结果通过 JSON 返回，失败时返回非零并跳过 `sync`。
+
+补装调用官方 `trellis init --codex -y`，已有项目不传 `-u`，不修改开发者和任务。
+不要添加 `--force` 或 `--skip-existing`：当前 Trellis 的 `-y` 已保留已有文件，
+而后两者会绕过添加平台的分支。核心入口齐全时不再调用 CLI。
+
+项目 `.trellis/.version` 与 CLI 不一致时先停止补装，报告两边版本；由 AI 选择
+与项目匹配的官方 CLI 补平台，或按另行确认的范围升级。Atlas 不隐式下载 CLI，
+不复制其他项目的模板，也不把项目技能安装进用户全局目录。
+CLI 返回成功后仍缺核心入口时报告具体缺项；已有平台登记可能让官方 init 跳过，
+此时先看 `trellis update --dry-run`，不要通过强制覆盖绕过检查。
+
+```bash
+atlas doctor . --platform codex
+```
+
+这检查的是本地核心入口，不是完整模板审计或 Codex 运行态验收。Hook 的启用、
+信任以及新技能是否被当前会话加载，仍需在 Codex 中确认。
 
 AI 依技能在任务验证完成后归并稳定结论，不是 hook 自动保存聊天；未核实、短暂或
 重复的内容不应记录。Trellis 的状态与工作证据不能自动升格为现行项目事实。
