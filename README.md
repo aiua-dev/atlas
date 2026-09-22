@@ -183,12 +183,14 @@ atlas context --root . --prompt "帮我测试 consumer 接口"
 
 | 命令 | 用途 |
 |---|---|
+| `atlas skill` / `atlas skill --path` | 读取随 CLI 安装的技能 / 获取真实路径，不依赖项目配置或 Codex 缓存目录结构 |
 | `atlas install` | 注册随包提供的 Codex 插件（全局） |
 | `atlas install --claude .` | 把钩子注册到项目的 Claude Code 配置（幂等） |
 | `atlas uninstall-claude .` | 从项目配置移除 Atlas 钩子，只删自己那条 |
 | `atlas init . --trellis` | 创建项目级 `.atlas/config.json`，并启用 Trellis 来源适配 |
 | `atlas index .` | 增量构建项目知识索引 |
 | `atlas context --root . --prompt "..."` | 无状态查看一次请求会命中哪些资料 |
+| `atlas context --optional --prompt "..."` | 日常路由入口；未配置项目返回 `not-configured`，继续读项目说明和代码 |
 | `atlas route --root . --prompt "..."` | 在当前会话中扩展、切换或恢复路由分支 |
 | `atlas focus --root .` | 查看当前会话的活动分支 |
 | `atlas doctor .` | 检查配置、索引、Trellis 状态与适配、钩子注册 |
@@ -242,6 +244,16 @@ atlas install
 2. 运行 `atlas doctor PROJECT_ROOT`。
 3. 项目文档或路由配置刚修改时，运行 `atlas index PROJECT_ROOT`。
 4. 用 `atlas context --root PROJECT_ROOT --prompt "REQUEST"` 检查匹配结果。
+
+从 0.6.2 起，AI 加载技能时使用 `atlas skill`，需要文件路径时用 `atlas skill --path`；入口跟随
+当前 CLI 安装位置，不手拼 Codex 的 marketplace/插件/版本缓存路径。
+读取猜测路径失败不能直接判定为安装损坏或版本漂移。
+
+日常查询使用 `context --optional`：项目未配置时返回成功，JSON 为
+`{ "root": "...", "status": "not-configured", "results": [] }`，这是尚未接入，
+不是检索无命中。命令不会因此初始化项目，`--refresh` 也不会。已配置项目保持原有
+检索行为；配置损坏、错误路径、缺少查询文本或非法决策意图仍报错。
+省略 `--optional` 保留原有严格检查。
 
 Atlas 命中显式路由后，会要求 Codex 把路由文件作为第一项仓库内容读取，避免先做
 目录遍历、全项目搜索、源码扫描或插件版本路径探测。

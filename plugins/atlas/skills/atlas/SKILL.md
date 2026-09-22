@@ -1,6 +1,6 @@
 ---
 name: atlas
-description: Route the model to the smallest relevant project knowledge set before non-trivial work, record durable findings into maintained canonical sources, and bootstrap Atlas plus Trellis when task tracking is requested. Use when a project has distributed docs, Trellis artifacts, stale or conflicting claims, reusable learnings, knowledge entry points, runbooks, contracts, or architectural decisions; also use when the user asks to write something down, or to start task tracking in a project that has not been initialized.
+description: Load with `atlas skill`. Route project knowledge before substantial work and reconcile verified findings into canonical sources. Use for distributed docs, knowledge recording, and Atlas/Trellis setup.
 ---
 
 # Atlas
@@ -8,6 +8,16 @@ description: Route the model to the smallest relevant project knowledge set befo
 Treat project knowledge as a routed source-of-truth graph, not a folder to scan
 and not a second task database. Atlas has two modes: **route before work** and
 **reconcile after verification**.
+
+## Load the skill
+
+`atlas skill` prints this installed skill and its absolute source path without
+requiring project configuration. Use `atlas skill --path` when a file reader is
+needed; resolve relative references from that file's directory. This entry point
+avoids reconstructing Codex's versioned plugin cache path. If the CLI is absent
+or predates this command, use the exact skill path supplied by the host, expanding
+any listed root alias without dropping repeated directory names. A failed read
+of a guessed path does not establish that the installation is broken or outdated.
 
 ## Route before work
 
@@ -18,13 +28,19 @@ locate this skill again. Never construct a path inside the Codex plugin cache or
 pin a plugin version directory; use the installed `atlas` command for any
 later route operation.
 
-1. Find the nearest `.atlas/config.json`.
-2. Run the installed router with the current request:
+1. Run the installed router with the current request; it locates the nearest
+   `.atlas/config.json`:
 
    ```bash
-   atlas context --prompt "<current request>"
+   atlas context --optional --prompt "<current request>"
    ```
 
+2. `not-configured` means the project has not opted into routing. Continue with
+   its instructions, knowledge entry point, and focused source reads. Do not
+   describe this as a broken installation, an empty search, or version drift;
+   avoid setup narration unless it affects the requested outcome. It does not
+   initialize Atlas or Trellis. Malformed configuration and other actual errors
+   still fail and require diagnosis; do not hide them with a generic fallback.
 3. Make the returned files and line ranges the first repository-content read.
    Do not precede them with `git status`, directory walks, broad grep, or source
    scans. Follow at most the returned one-hop relations unless evidence requires

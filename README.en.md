@@ -165,10 +165,12 @@ atlas context --root . --prompt "test the consumer API"
 
 | Command | Purpose |
 |---|---|
+| `atlas skill` / `atlas skill --path` | Read the CLI's bundled skill / resolve its actual path without project configuration or Codex cache assumptions |
 | `atlas install` | Register and install the bundled Codex plugin from the npm package |
 | `atlas init . --trellis` | Create `.atlas/config.json` with Trellis source adapters |
 | `atlas index .` | Incrementally build the project knowledge index |
 | `atlas context --root . --prompt "..."` | Preview a stateless route for one request |
+| `atlas context --optional --prompt "..."` | Route during daily work; return `not-configured` for a project that has not opted in |
 | `atlas route --root . --prompt "..."` | Expand, switch, or reactivate the current session branch |
 | `atlas focus --root .` | Show the active branch for the current session |
 | `atlas doctor .` | Check configuration, index, Trellis integration, and hook status |
@@ -225,6 +227,19 @@ Fully restart Codex Desktop after an upgrade. If a new task has no Atlas route:
 2. Run `atlas doctor PROJECT_ROOT`.
 3. Run `atlas index PROJECT_ROOT` after changing docs or route config.
 4. Inspect matching with `atlas context --root PROJECT_ROOT --prompt "REQUEST"`.
+
+Since 0.6.2, load the skill with `atlas skill`, or resolve its file with `atlas skill --path`.
+The entry point follows the installed CLI without reconstructing Codex's
+marketplace/plugin/version cache path. A failed read of a guessed path does not
+establish a broken installation or version drift.
+
+For daily work, `context --optional` returns success when the project has no
+configuration, with JSON `{ "root": "...", "status": "not-configured", "results": [] }`.
+This means routing has not been set up, rather than a search returning no matches.
+It does not initialize the project, even with `--refresh`. Configured projects
+retain existing retrieval behavior. Invalid configuration, bad paths, missing
+prompts, and invalid decision intents still fail. Omit `--optional` to keep the
+original strict checks.
 
 After an explicit route matches, Atlas tells Codex to make the routed files the
 first repository-content read, preventing an initial directory walk, broad

@@ -28,7 +28,7 @@ import {
 } from "../lib/core.mjs";
 import { syncTrellis, formatSyncReport } from "../lib/sync.mjs";
 import { recordClaim, formatRecordResult } from "../lib/record.mjs";
-import { recordDecision } from "../lib/decisions.mjs";
+import { recordDecision, validateDecisionIntent } from "../lib/decisions.mjs";
 import { inspectTrellisPlatform } from "../lib/trellis-platform.mjs";
 
 function usage(exitCode = 0) {
@@ -36,6 +36,7 @@ function usage(exitCode = 0) {
   stream.write(`Atlas
 
 Usage:
+  atlas skill [--path]                       读取随 CLI 安装的技能；--path 只输出真实路径
   atlas install [--json]                     注册 Codex 插件(全局)
   atlas install --claude [ROOT] [--command C] 把钩子注册到项目的 Claude Code 配置
   atlas uninstall-claude [ROOT]              从项目配置移除 Atlas 钩子
@@ -50,7 +51,8 @@ Usage:
                                              将决策归并到已索引真源；JSON 可用 - 从 stdin 读取
                           [--supersede ID]    同一 topic 下原子取代旧决定，--expect 为旧决定指纹
   atlas index [ROOT]
-  atlas context [--root ROOT] --prompt TEXT [--json] [--refresh] [--lexical] [--intent all|current|history]
+  atlas context [--root ROOT] --prompt TEXT [--optional] [--json] [--refresh] [--lexical] [--intent all|current|history]
+                                             --optional 将缺少项目配置作为正常状态返回
   atlas route [--root ROOT] --prompt TEXT [--json] [--refresh] [--intent all|current|history]
   atlas focus [--root ROOT] [--json]
   atlas doctor [ROOT] [--json] [--platform codex]
@@ -72,7 +74,7 @@ const packageVersion = JSON.parse(
 ).version;
 
 // 布尔标志后面的东西仍然是位置参数；只有取值型标志（--root/--prompt/--command）会吃掉下一个。
-const BOOLEAN_FLAGS = new Set(["--trellis", "--json", "--refresh", "--claude", "--dry-run", "--lexical"]);
+const BOOLEAN_FLAGS = new Set(["--trellis", "--json", "--refresh", "--claude", "--dry-run", "--lexical", "--optional", "--path"]);
 
 function positional(index = 0) {
   return process.argv.slice(3).filter((argument, offset, all) => {
@@ -121,6 +123,14 @@ async function main() {
   if (!command || ["-h", "--help", "help"].includes(command)) usage(0);
   if (["-v", "--version", "version"].includes(command)) {
     process.stdout.write(`${packageVersion}\n`);
+    return;
+  }
+
+  if (command === "skill") {
+    const skillPath = fs.realpathSync(path.join(packageRootFrom(import.meta.url), "plugins/atlas/skills/atlas/SKILL.md"));
+    process.stdout.write(process.argv.includes("--path")
+      ? `${skillPath}\n`
+      : `Atlas skill source: ${skillPath}\nRelative references resolve from this file's directory.\n\n${fs.readFileSync(skillPath, "utf8")}`);
     return;
   }
 
@@ -300,14 +310,29 @@ async function main() {
   }
 
   if (command === "context") {
-    const root = resolveRoot(option("--root"));
     const prompt = option("--prompt") ?? "";
     if (!prompt) throw new Error("context 需要 --prompt TEXT");
+    const decisionIntent = validateDecisionIntent(option("--intent") ?? "all");
+    const optional = process.argv.includes("--optional");
+    const candidate = option("--root") ?? (optional ? findProjectRoot() ?? process.cwd() : undefined);
+    const root = resolveRoot(candidate);
+    if (optional) {
+      // 只把缺配置视为正常状态；路径错误、损坏配置等仍交给原有错误链路。
+      if (!fs.statSync(root).isDirectory()) throw new Error(`项目路径不是目录：${root}`);
+      try {
+        fs.lstatSync(path.join(root, ".atlas/config.json"));
+      } catch (error) {
+        if (error.code !== "ENOENT") throw error;
+        process.stdout.write(process.argv.includes("--json")
+          ? `${JSON.stringify({ root, status: "not-configured", results: [] }, null, 2)}\n`
+          : "[Atlas] 此项目尚未配置知识路由；继续读取项目说明与代码。\n");
+        return;
+      }
+    }
     const refresh = process.argv.includes("--refresh");
     // 默认走混合检索（词法 + 嵌入语义）；未配嵌入凭据或调用失败时自动降级为词法。
     // --lexical 强制纯词法，用于离线环境或需要与历史结果对照时。
     const forceLexical = process.argv.includes("--lexical");
-    const decisionIntent = option("--intent") ?? "all";
     const context = forceLexical
       ? queryContext({ projectRoot: root, prompt, forceRefresh: refresh, cacheOnly: !refresh, decisionIntent })
       : await queryContextWithEmbedding({ projectRoot: root, prompt, forceRefresh: refresh, decisionIntent });
