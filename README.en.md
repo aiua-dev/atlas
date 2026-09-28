@@ -228,6 +228,15 @@ Fully restart Codex Desktop after an upgrade. If a new task has no Atlas route:
 3. Run `atlas index PROJECT_ROOT` after changing docs or route config.
 4. Inspect matching with `atlas context --root PROJECT_ROOT --prompt "REQUEST"`.
 
+A working CLI does not prove that the plugin hook runs successfully. Codex caches
+only `plugins/atlas/`, so runtime version metadata and skill paths must resolve
+inside that directory, without relying on the npm package's outer `package.json`.
+Version 0.6.3 fixes the plugin startup failure caused by that outer path dependency.
+`hook exited with code 1` is a generic failure; inspect stderr for the cause.
+`test/plugin-cache.test.mjs` copies only the plugin and executes its registered
+hook command, checking silent success without configuration, context injection
+with configuration, and visible errors for malformed input.
+
 Since 0.6.2, load the skill with `atlas skill`, or resolve its file with `atlas skill --path`.
 The entry point follows the installed CLI without reconstructing Codex's
 marketplace/plugin/version cache path. A failed read of a guessed path does not

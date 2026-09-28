@@ -69,8 +69,9 @@ function option(name) {
   return index >= 0 ? process.argv[index + 1] : undefined;
 }
 
+// Codex only caches plugins/atlas; runtime metadata must stay inside that boundary.
 const packageVersion = JSON.parse(
-  fs.readFileSync(new URL("../../../package.json", import.meta.url), "utf8")
+  fs.readFileSync(new URL("../.codex-plugin/plugin.json", import.meta.url), "utf8")
 ).version;
 
 // 布尔标志后面的东西仍然是位置参数；只有取值型标志（--root/--prompt/--command）会吃掉下一个。
@@ -127,7 +128,7 @@ async function main() {
   }
 
   if (command === "skill") {
-    const skillPath = fs.realpathSync(path.join(packageRootFrom(import.meta.url), "plugins/atlas/skills/atlas/SKILL.md"));
+    const skillPath = fs.realpathSync(new URL("../skills/atlas/SKILL.md", import.meta.url));
     process.stdout.write(process.argv.includes("--path")
       ? `${skillPath}\n`
       : `Atlas skill source: ${skillPath}\nRelative references resolve from this file's directory.\n\n${fs.readFileSync(skillPath, "utf8")}`);

@@ -245,6 +245,13 @@ atlas install
 3. 项目文档或路由配置刚修改时，运行 `atlas index PROJECT_ROOT`。
 4. 用 `atlas context --root PROJECT_ROOT --prompt "REQUEST"` 检查匹配结果。
 
+手动 CLI 正常不代表插件 hook 已正常运行。Codex 缓存只包含 `plugins/atlas/`，
+自动 hook 的版本信息和技能路径必须从插件内部解析，不能依赖 npm 包外层的
+`package.json`。0.6.3 修复了这一外层路径依赖导致的插件启动失败。
+`hook exited with code 1` 是通用失败提示，应查看 stderr 判断原因。
+`test/plugin-cache.test.mjs` 会仅复制插件目录，并执行注册的真实 hook 命令，验证
+未配置项目静默成功、已配置项目正常注入以及错误输入仍可诊断。
+
 从 0.6.2 起，AI 加载技能时使用 `atlas skill`，需要文件路径时用 `atlas skill --path`；入口跟随
 当前 CLI 安装位置，不手拼 Codex 的 marketplace/插件/版本缓存路径。
 读取猜测路径失败不能直接判定为安装损坏或版本漂移。
